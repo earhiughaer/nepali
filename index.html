@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f7fafc">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Nepali">
+    <title>Nepali Lernen</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/icon.svg">
+    <link rel="stylesheet" href="styles.css?v=17">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">नेपाली</p>
+          <h1>Nepali Lernen</h1>
+        </div>
+        <button class="icon-button" id="installHelpButton" aria-label="Installationshinweise anzeigen" title="Installieren">
+          <span aria-hidden="true">⌂</span>
+        </button>
+      </header>
+
+      <main>
+        <section class="progress-band" aria-label="Lernfortschritt">
+          <div>
+            <span class="metric" id="dueCount">0</span>
+            <span class="metric-label">heute fällig</span>
+          </div>
+          <div>
+            <span class="metric" id="masteredCount">0</span>
+            <span class="metric-label">Phase 6</span>
+          </div>
+          <div>
+            <span class="metric" id="streakCount">0</span>
+            <span class="metric-label">Quiz-Serie</span>
+          </div>
+        </section>
+
+        <nav class="tabs" aria-label="Lernbereiche">
+          <button class="tab active" data-view="lesson">Üben</button>
+          <button class="tab" data-view="alphabet">Alphabet</button>
+          <button class="tab" data-view="drawing">Schreiben</button>
+        </nav>
+
+        <section class="view active" id="lessonView">
+          <div class="lesson-shell">
+            <div class="lesson-top">
+              <div>
+                <p class="eyebrow">Lernweg</p>
+                <h2 id="lessonPathTitle">Geführtes Üben</h2>
+              </div>
+              <span id="lessonPathMeta">Buchstaben, Wörter und Sätze gemischt</span>
+              <button class="secondary-button" id="lessonResetButton">Neu</button>
+            </div>
+            <div class="lesson-progress" aria-label="Übungsfortschritt">
+              <span id="lessonProgressBar"></span>
+            </div>
+            <div class="lesson-stage" id="lessonStage"></div>
+            <div class="lesson-feedback hidden" id="lessonFeedback"></div>
+            <button class="lesson-continue" id="lessonContinueButton">Weiter</button>
+          </div>
+        </section>
+
+        <section class="view" id="alphabetView">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Devanagari</p>
+              <h2>Alphabet-Karteikarten</h2>
+            </div>
+            <div class="segmented" role="group" aria-label="Zeichengruppe">
+              <button class="segment active" data-alphabet-filter="all">Alle</button>
+              <button class="segment" data-alphabet-filter="vowel">Vokale</button>
+              <button class="segment" data-alphabet-filter="consonant">Konsonanten</button>
+            </div>
+          </div>
+          <div class="flashcard-stage">
+            <button class="round-button" id="prevLetterButton" aria-label="Vorheriges Zeichen">‹</button>
+            <button class="letter-card" id="letterCard" aria-label="Karte umdrehen">
+              <span class="card-hint">Tippen zum Umdrehen</span>
+              <span class="letter-symbol" id="letterSymbol">अ</span>
+              <span class="letter-detail" id="letterDetail">a</span>
+            </button>
+            <button class="round-button" id="nextLetterButton" aria-label="Nächstes Zeichen">›</button>
+          </div>
+          <div class="action-row">
+            <button class="primary-button" id="speakLetterButton">Anhören</button>
+            <button class="secondary-button" id="toggleKnownLetterButton">Kann ich</button>
+          </div>
+          <div class="letter-grid" id="letterGrid" aria-label="Alle Zeichen"></div>
+        </section>
+
+        <section class="view" id="drawingView">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Schreibtraining</p>
+              <h2>Erst zeichnen, dann vergleichen</h2>
+            </div>
+            <select id="drawingLetterSelect" aria-label="Zeichen auswählen"></select>
+          </div>
+          <div class="drawing-layout">
+            <div class="canvas-wrap">
+              <canvas id="drawingCanvas" width="640" height="640" aria-label="Zeichenfläche"></canvas>
+              <div class="canvas-target hidden" id="targetOverlay">अ</div>
+            </div>
+            <div class="practice-panel">
+              <p class="big-letter" id="drawingTarget">अ</p>
+              <p id="drawingMeta">a · Vokal</p>
+              <div class="score-meter" aria-label="Ähnlichkeit">
+                <span id="scoreBar"></span>
+              </div>
+              <p class="score-copy" id="scoreCopy">Zeichne das Zeichen aus dem Gedächtnis.</p>
+              <div class="action-row compact">
+                <button class="primary-button" id="compareButton">Vergleichen</button>
+                <button class="secondary-button" id="clearCanvasButton">Löschen</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="wordsView">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">A1 Grundwortschatz</p>
+              <h2>Wörter mit Phasen lernen</h2>
+            </div>
+            <div class="segmented" role="group" aria-label="Wortfilter">
+              <button class="segment active" data-word-filter="all">Alle</button>
+              <button class="segment" data-word-filter="due">Fällig</button>
+              <button class="segment" data-word-filter="new">Neu</button>
+            </div>
+          </div>
+          <div class="phase-strip" id="wordPhaseStrip" aria-label="Wortphasen"></div>
+          <div class="word-trainer">
+            <button class="word-card" id="wordCard" aria-label="Wortkarte umdrehen">
+              <span class="card-hint">Tippen zum Umdrehen</span>
+              <span class="word-symbol" id="wordSymbol">नमस्ते</span>
+              <span class="word-detail" id="wordDetail">namaste</span>
+            </button>
+            <div class="srs-meta">
+              <span id="wordCategory">Begrüßung</span>
+              <span id="wordPhase">Phase 1</span>
+              <span id="wordDue">heute</span>
+            </div>
+            <div class="word-controls">
+              <button class="round-button" id="prevWordButton" aria-label="Vorheriges Wort">‹</button>
+              <button class="primary-button" id="speakWordButton">Anhören</button>
+              <button class="secondary-button danger-button" id="wrongWordButton">Falsch</button>
+              <button class="secondary-button success-button" id="rightWordButton">Richtig</button>
+              <button class="round-button" id="nextWordButton" aria-label="Nächstes Wort">›</button>
+            </div>
+          </div>
+          <div class="word-list" id="wordList" aria-label="Wortliste"></div>
+        </section>
+
+        <section class="view" id="sentencesView">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Aus den Wörtern</p>
+              <h2>Einfache Sätze</h2>
+            </div>
+            <div class="segmented" role="group" aria-label="Satzfilter">
+              <button class="segment active" data-sentence-filter="all">Alle</button>
+              <button class="segment" data-sentence-filter="due">Fällig</button>
+              <button class="segment" data-sentence-filter="new">Neu</button>
+            </div>
+          </div>
+          <div class="phase-strip" id="sentencePhaseStrip" aria-label="Satzphasen"></div>
+          <div class="sentence-trainer">
+            <button class="sentence-card" id="sentenceCard" aria-label="Satzkarte umdrehen">
+              <span class="card-hint">Tippen zum Umdrehen</span>
+              <span class="sentence-symbol" id="sentenceSymbol">म नेपाली सिक्दै छु।</span>
+              <span class="sentence-detail" id="sentenceDetail">ma nepali sikdai chhu.</span>
+            </button>
+            <div class="srs-meta">
+              <span id="sentenceCategory">Vorstellen</span>
+              <span id="sentencePhase">Phase 1</span>
+              <span id="sentenceDue">heute</span>
+            </div>
+            <div class="word-controls">
+              <button class="round-button" id="prevSentenceButton" aria-label="Vorheriger Satz">‹</button>
+              <button class="primary-button" id="speakSentenceButton">Anhören</button>
+              <button class="secondary-button danger-button" id="wrongSentenceButton">Falsch</button>
+              <button class="secondary-button success-button" id="rightSentenceButton">Richtig</button>
+              <button class="round-button" id="nextSentenceButton" aria-label="Nächster Satz">›</button>
+            </div>
+          </div>
+          <div class="sentence-list" id="sentenceList" aria-label="Satzliste"></div>
+        </section>
+
+        <section class="view" id="speechView">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Hören und sprechen</p>
+              <h2>Aussprache üben</h2>
+            </div>
+            <select id="phraseSelect" aria-label="Phrase auswählen"></select>
+          </div>
+          <div class="speech-layout">
+            <div class="phrase-display">
+              <p class="phrase-nepali" id="phraseNepali">नमस्ते</p>
+              <p class="phrase-roman" id="phraseRoman">namaste</p>
+              <p class="phrase-german" id="phraseGerman">Hallo</p>
+            </div>
+            <div class="recorder">
+              <button class="primary-button" id="playPhraseButton">Vorlesen</button>
+              <button class="secondary-button" id="recordButton">Aufnehmen</button>
+              <audio id="nativePlayback" controls class="hidden"></audio>
+              <audio id="recordingPlayback" controls class="hidden"></audio>
+              <p class="score-copy" id="recordingStatus">Nimm dich auf und vergleiche direkt mit der Vorlage.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="installDialog">
+      <form method="dialog">
+        <h2>Auf dem iPhone nutzen</h2>
+        <p>Öffne diese App in Safari, tippe auf Teilen und dann auf „Zum Home-Bildschirm“. Für Offline-Funktion und echtes PWA-Verhalten sollte sie über HTTPS bereitgestellt werden, z. B. per GitHub Pages, Netlify oder Cloudflare Pages.</p>
+        <button class="primary-button">OK</button>
+      </form>
+    </dialog>
+
+    <script src="content.js?v=17" defer></script>
+    <script src="app.js?v=17" defer></script>
+  </body>
+</html>

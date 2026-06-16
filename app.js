@@ -1,0 +1,1619 @@
+const alphabet = [
+  { id: "a", char: "अ", roman: "a", type: "vowel", sound: "a wie in allein" },
+  { id: "aa", char: "आ", roman: "aa", type: "vowel", sound: "langes a" },
+  { id: "i", char: "इ", roman: "i", type: "vowel", sound: "kurzes i" },
+  { id: "ii", char: "ई", roman: "ii", type: "vowel", sound: "langes i" },
+  { id: "u", char: "उ", roman: "u", type: "vowel", sound: "kurzes u" },
+  { id: "uu", char: "ऊ", roman: "uu", type: "vowel", sound: "langes u" },
+  { id: "ri", char: "ऋ", roman: "ri", type: "vowel", sound: "silbisches ri" },
+  { id: "e", char: "ए", roman: "e", type: "vowel", sound: "e" },
+  { id: "ai", char: "ऐ", roman: "ai", type: "vowel", sound: "ai" },
+  { id: "o", char: "ओ", roman: "o", type: "vowel", sound: "o" },
+  { id: "au", char: "औ", roman: "au", type: "vowel", sound: "au" },
+  { id: "am", char: "अं", roman: "am", type: "vowel", sound: "nasal" },
+  { id: "ah", char: "अः", roman: "ah", type: "vowel", sound: "behaucht" },
+  { id: "ka", char: "क", roman: "ka", type: "consonant", sound: "ka" },
+  { id: "kha", char: "ख", roman: "kha", type: "consonant", sound: "kha" },
+  { id: "ga", char: "ग", roman: "ga", type: "consonant", sound: "ga" },
+  { id: "gha", char: "घ", roman: "gha", type: "consonant", sound: "gha" },
+  { id: "nga", char: "ङ", roman: "nga", type: "consonant", sound: "nga" },
+  { id: "cha", char: "च", roman: "cha", type: "consonant", sound: "cha" },
+  { id: "chha", char: "छ", roman: "chha", type: "consonant", sound: "chha" },
+  { id: "ja", char: "ज", roman: "ja", type: "consonant", sound: "ja" },
+  { id: "jha", char: "झ", roman: "jha", type: "consonant", sound: "jha" },
+  { id: "nya", char: "ञ", roman: "nya", type: "consonant", sound: "nya" },
+  { id: "tta", char: "ट", roman: "tta", type: "consonant", sound: "retroflex ta" },
+  { id: "ttha", char: "ठ", roman: "ttha", type: "consonant", sound: "retroflex tha" },
+  { id: "dda", char: "ड", roman: "dda", type: "consonant", sound: "retroflex da" },
+  { id: "ddha", char: "ढ", roman: "ddha", type: "consonant", sound: "retroflex dha" },
+  { id: "nna", char: "ण", roman: "nna", type: "consonant", sound: "retroflex na" },
+  { id: "ta", char: "त", roman: "ta", type: "consonant", sound: "dental ta" },
+  { id: "tha", char: "थ", roman: "tha", type: "consonant", sound: "dental tha" },
+  { id: "da", char: "द", roman: "da", type: "consonant", sound: "dental da" },
+  { id: "dha", char: "ध", roman: "dha", type: "consonant", sound: "dental dha" },
+  { id: "na", char: "न", roman: "na", type: "consonant", sound: "na" },
+  { id: "pa", char: "प", roman: "pa", type: "consonant", sound: "pa" },
+  { id: "pha", char: "फ", roman: "pha/fa", type: "consonant", sound: "pha/fa" },
+  { id: "ba", char: "ब", roman: "ba", type: "consonant", sound: "ba" },
+  { id: "bha", char: "भ", roman: "bha", type: "consonant", sound: "bha" },
+  { id: "ma", char: "म", roman: "ma", type: "consonant", sound: "ma" },
+  { id: "ya", char: "य", roman: "ya", type: "consonant", sound: "ya" },
+  { id: "ra", char: "र", roman: "ra", type: "consonant", sound: "ra" },
+  { id: "la", char: "ल", roman: "la", type: "consonant", sound: "la" },
+  { id: "wa", char: "व", roman: "wa/va", type: "consonant", sound: "wa oder va" },
+  { id: "sha", char: "श", roman: "sha", type: "consonant", sound: "sha" },
+  { id: "ssa", char: "ष", roman: "ssa", type: "consonant", sound: "retroflex sha" },
+  { id: "sa", char: "स", roman: "sa", type: "consonant", sound: "sa" },
+  { id: "ha", char: "ह", roman: "ha", type: "consonant", sound: "ha" },
+  { id: "ksha", char: "क्ष", roman: "ksha", type: "consonant", sound: "ksha" },
+  { id: "tra", char: "त्र", roman: "tra", type: "consonant", sound: "tra" },
+  { id: "gya", char: "ज्ञ", roman: "gya", type: "consonant", sound: "gya" }
+];
+
+const content = window.NEPALI_CONTENT;
+const words = content.words;
+const excludedSentenceIds = new Set(["hello", "thank_you"]);
+const sentences = content.sentences.filter(isPracticeSentence);
+const lessonLetters = [
+  ...alphabet.filter((item) => item.type === "consonant"),
+  ...alphabet.filter((item) => item.type === "vowel")
+];
+const phaseIntervals = content.phaseIntervals;
+const storeKey = "nepali-pwa-progress-v13";
+const lessonRomanKey = "nepali-pwa-lesson-roman-v3";
+const legacyStoreKey = "nepali-pwa-progress-v1";
+const lessonRomanDefaults = {
+  teachWord: true,
+  teachSentence: true,
+  teachLetter: true,
+  letterRecognize: true,
+  letterWrite: true,
+  wordRecognize: true,
+  wordListen: false,
+  wordRecall: true,
+  sentenceMeaning: true,
+  sentenceBuild: true,
+  sentenceListen: false,
+  sentenceRecall: true
+};
+const lessonTypeLabels = {
+  teachWord: "Neues Wort",
+  teachSentence: "Neuer Satz",
+  teachLetter: "Neuer Buchstabe",
+  letterRecognize: "Buchstabe wählen",
+  letterWrite: "Buchstabe schreiben",
+  wordRecognize: "Wort wählen",
+  wordListen: "Wort hören",
+  wordRecall: "Wort erinnern",
+  sentenceMeaning: "Satz verstehen",
+  sentenceBuild: "Satz übersetzen",
+  sentenceListen: "Satz hören",
+  sentenceRecall: "Satz erinnern"
+};
+const feedbackCopy = {
+  correct: [
+    "Sehr gut, das sitzt!",
+    "Genau richtig. Weiter so!",
+    "Treffer. Du hast es erkannt!",
+    "Stark, das war sauber!"
+  ],
+  wrong: [
+    "Leider falsch! Schau dir die richtige Lösung kurz an!",
+    "Leider falsch! Das kommt gleich wieder dran!",
+    "Leider falsch! Kein Problem, genau dafür ist die Wiederholung da!",
+    "Leider falsch! Nimm dir die Lösung kurz mit!"
+  ],
+  recallCorrect: [
+    "Gut erinnert! Das bleibt für diese Runde sicher!",
+    "Gut erinnert! Genau so soll es abrufbar sein!",
+    "Gut erinnert! Das war aus dem Kopf da!",
+    "Gut erinnert! Weiter so!"
+  ],
+  recallWrong: [
+    "Leider nicht gewusst! Du bekommst es nochmal!",
+    "Leider nicht gewusst! Das üben wir weiter!",
+    "Leider nicht gewusst! Beim nächsten Durchlauf wird es leichter!",
+    "Leider nicht gewusst! Kurz ansehen, dann festigen!"
+  ]
+};
+
+const state = {
+  view: "lesson",
+  alphabetFilter: "all",
+  wordFilter: "all",
+  sentenceFilter: "all",
+  letterIndex: 0,
+  letterFlipped: false,
+  wordIndex: 0,
+  wordFlipped: false,
+  sentenceIndex: 0,
+  sentenceFlipped: false,
+  knownLetters: new Set(),
+  cards: {},
+  streak: 0,
+  mediaRecorder: null,
+  recordingChunks: [],
+  drawingCompared: false,
+  activeAudio: null,
+  lessonRoman: { ...lessonRomanDefaults },
+  lesson: {
+    index: 0,
+    steps: [],
+    selected: [],
+    checked: false,
+    results: {},
+    evaluated: false
+  }
+};
+
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+const els = {
+  tabs: $$(".tab"),
+  views: {
+    lesson: $("#lessonView"),
+    alphabet: $("#alphabetView"),
+    drawing: $("#drawingView"),
+    words: $("#wordsView"),
+    sentences: $("#sentencesView"),
+    speech: $("#speechView")
+  },
+  dueCount: $("#dueCount"),
+  masteredCount: $("#masteredCount"),
+  streakCount: $("#streakCount"),
+  lessonResetButton: $("#lessonResetButton"),
+  lessonPathTitle: $("#lessonPathTitle"),
+  lessonPathMeta: $("#lessonPathMeta"),
+  lessonProgressBar: $("#lessonProgressBar"),
+  lessonStage: $("#lessonStage"),
+  lessonFeedback: $("#lessonFeedback"),
+  lessonContinueButton: $("#lessonContinueButton"),
+  letterCard: $("#letterCard"),
+  letterSymbol: $("#letterSymbol"),
+  letterDetail: $("#letterDetail"),
+  letterGrid: $("#letterGrid"),
+  speakLetterButton: $("#speakLetterButton"),
+  toggleKnownLetterButton: $("#toggleKnownLetterButton"),
+  prevLetterButton: $("#prevLetterButton"),
+  nextLetterButton: $("#nextLetterButton"),
+  drawingLetterSelect: $("#drawingLetterSelect"),
+  drawingCanvas: $("#drawingCanvas"),
+  drawingTarget: $("#drawingTarget"),
+  drawingMeta: $("#drawingMeta"),
+  targetOverlay: $("#targetOverlay"),
+  scoreBar: $("#scoreBar"),
+  scoreCopy: $("#scoreCopy"),
+  compareButton: $("#compareButton"),
+  clearCanvasButton: $("#clearCanvasButton"),
+  wordCard: $("#wordCard"),
+  wordSymbol: $("#wordSymbol"),
+  wordDetail: $("#wordDetail"),
+  wordCategory: $("#wordCategory"),
+  wordPhase: $("#wordPhase"),
+  wordDue: $("#wordDue"),
+  wordPhaseStrip: $("#wordPhaseStrip"),
+  prevWordButton: $("#prevWordButton"),
+  nextWordButton: $("#nextWordButton"),
+  speakWordButton: $("#speakWordButton"),
+  rightWordButton: $("#rightWordButton"),
+  wrongWordButton: $("#wrongWordButton"),
+  wordList: $("#wordList"),
+  sentenceCard: $("#sentenceCard"),
+  sentenceSymbol: $("#sentenceSymbol"),
+  sentenceDetail: $("#sentenceDetail"),
+  sentenceCategory: $("#sentenceCategory"),
+  sentencePhase: $("#sentencePhase"),
+  sentenceDue: $("#sentenceDue"),
+  sentencePhaseStrip: $("#sentencePhaseStrip"),
+  prevSentenceButton: $("#prevSentenceButton"),
+  nextSentenceButton: $("#nextSentenceButton"),
+  speakSentenceButton: $("#speakSentenceButton"),
+  rightSentenceButton: $("#rightSentenceButton"),
+  wrongSentenceButton: $("#wrongSentenceButton"),
+  sentenceList: $("#sentenceList"),
+  phraseSelect: $("#phraseSelect"),
+  phraseNepali: $("#phraseNepali"),
+  phraseRoman: $("#phraseRoman"),
+  phraseGerman: $("#phraseGerman"),
+  playPhraseButton: $("#playPhraseButton"),
+  recordButton: $("#recordButton"),
+  nativePlayback: $("#nativePlayback"),
+  recordingPlayback: $("#recordingPlayback"),
+  recordingStatus: $("#recordingStatus"),
+  installHelpButton: $("#installHelpButton"),
+  installDialog: $("#installDialog")
+};
+
+const canvasContext = els.drawingCanvas.getContext("2d", { willReadFrequently: true });
+let isDrawing = false;
+let lastPoint = null;
+
+function todayKey(offset = 0) {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() + offset);
+  return date.toISOString().slice(0, 10);
+}
+
+function cardKey(kind, id) {
+  return `${kind}:${id}`;
+}
+
+function ensureCard(kind, item) {
+  const key = cardKey(kind, item.id);
+  if (!state.cards[key]) {
+    state.cards[key] = {
+      phase: 1,
+      nextDue: todayKey(),
+      correct: 0,
+      wrong: 0,
+      lastSeen: null
+    };
+  }
+  return state.cards[key];
+}
+
+function allLearningItems() {
+  return [
+    ...lessonLetters.map((item) => ({ kind: "letter", item })),
+    ...words.map((item) => ({ kind: "word", item })),
+    ...sentences.map((item) => ({ kind: "sentence", item }))
+  ];
+}
+
+function isDue(card) {
+  return card.nextDue <= todayKey();
+}
+
+function isNew(card) {
+  return card.correct === 0 && card.wrong === 0;
+}
+
+function filteredItems(kind) {
+  const items = kind === "word" ? words : sentences;
+  const filter = kind === "word" ? state.wordFilter : state.sentenceFilter;
+  if (filter === "all") return items;
+  return items.filter((item) => {
+    const card = ensureCard(kind, item);
+    return filter === "due" ? isDue(card) : isNew(card);
+  });
+}
+
+function currentLetter() {
+  const letters = filteredAlphabet();
+  state.letterIndex = clampIndex(state.letterIndex, letters.length);
+  return letters[state.letterIndex];
+}
+
+function currentWord() {
+  const items = filteredItems("word");
+  if (!items.length) return words[0];
+  state.wordIndex = clampIndex(state.wordIndex, items.length);
+  return items[state.wordIndex];
+}
+
+function currentSentence() {
+  const items = filteredItems("sentence");
+  if (!items.length) return sentences[0];
+  state.sentenceIndex = clampIndex(state.sentenceIndex, items.length);
+  return items[state.sentenceIndex];
+}
+
+function isPracticeSentence(sentence) {
+  if (excludedSentenceIds.has(sentence.id)) return false;
+  const germanWords = sentence.german.replace(/[.,!?]/g, "").trim().split(/\s+/).filter(Boolean);
+  return germanWords.length > 1;
+}
+
+function clampIndex(index, length) {
+  if (!length) return 0;
+  if (index < 0) return length - 1;
+  if (index >= length) return 0;
+  return index;
+}
+
+function filteredAlphabet() {
+  if (state.alphabetFilter === "all") return alphabet;
+  return alphabet.filter((item) => item.type === state.alphabetFilter);
+}
+
+function loadProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(storeKey));
+    if (saved) {
+      state.knownLetters = new Set(saved.knownLetters || []);
+      state.cards = saved.cards || {};
+      state.streak = saved.streak || 0;
+      return;
+    }
+    const legacy = JSON.parse(localStorage.getItem(legacyStoreKey));
+    if (legacy) {
+      state.knownLetters = new Set(legacy.knownLetters || []);
+      state.streak = legacy.streak || 0;
+    }
+  } catch {
+    localStorage.removeItem(storeKey);
+  }
+}
+
+function saveProgress() {
+  localStorage.setItem(storeKey, JSON.stringify({
+    knownLetters: [...state.knownLetters],
+    cards: state.cards,
+    streak: state.streak
+  }));
+}
+
+function loadLessonSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(lessonRomanKey));
+    if (saved) state.lessonRoman = { ...lessonRomanDefaults, ...saved };
+  } catch {
+    localStorage.removeItem(lessonRomanKey);
+  }
+}
+
+function saveLessonSettings() {
+  localStorage.setItem(lessonRomanKey, JSON.stringify(state.lessonRoman));
+}
+
+function setView(view) {
+  state.view = view;
+  els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
+  Object.entries(els.views).forEach(([key, el]) => el.classList.toggle("active", key === view));
+  if (view === "lesson" && !state.lesson.steps.length) {
+    startLesson();
+  }
+}
+
+function renderProgress() {
+  const learning = allLearningItems();
+  const due = learning.filter(({ kind, item }) => isDue(ensureCard(kind, item))).length;
+  const mastered = learning.filter(({ kind, item }) => ensureCard(kind, item).phase >= 6).length;
+  els.dueCount.textContent = due;
+  els.masteredCount.textContent = mastered;
+  els.streakCount.textContent = state.streak;
+}
+
+function renderPhaseStrip(kind) {
+  const host = kind === "word" ? els.wordPhaseStrip : els.sentencePhaseStrip;
+  const items = kind === "word" ? words : sentences;
+  host.innerHTML = "";
+  for (let phase = 1; phase <= 6; phase += 1) {
+    const count = items.filter((item) => ensureCard(kind, item).phase === phase).length;
+    const pill = document.createElement("span");
+    pill.className = "phase-pill";
+    pill.textContent = `Phase ${phase}: ${count}`;
+    host.append(pill);
+  }
+}
+
+function renderLetter() {
+  const letter = currentLetter();
+  els.letterSymbol.textContent = letter.char;
+  els.letterDetail.textContent = state.letterFlipped ? `${letter.roman} · ${letter.sound}` : " ";
+  els.toggleKnownLetterButton.textContent = state.knownLetters.has(letter.id) ? "Doch nicht" : "Kann ich";
+  els.letterGrid.querySelectorAll(".letter-chip").forEach((button) => {
+    button.classList.toggle("active", button.dataset.id === letter.id);
+    button.classList.toggle("known", state.knownLetters.has(button.dataset.id));
+  });
+}
+
+function renderLetterGrid() {
+  els.letterGrid.innerHTML = "";
+  filteredAlphabet().forEach((letter, index) => {
+    const button = document.createElement("button");
+    button.className = "letter-chip";
+    button.dataset.id = letter.id;
+    button.textContent = letter.char;
+    button.title = `${letter.roman} · ${letter.sound}`;
+    button.addEventListener("click", () => {
+      state.letterIndex = index;
+      state.letterFlipped = false;
+      renderLetter();
+    });
+    els.letterGrid.append(button);
+  });
+}
+
+function renderDrawingSelect() {
+  els.drawingLetterSelect.innerHTML = "";
+  alphabet.forEach((letter) => {
+    const option = document.createElement("option");
+    option.value = letter.id;
+    option.textContent = `${letter.char} · ${letter.roman}`;
+    els.drawingLetterSelect.append(option);
+  });
+}
+
+function selectedDrawingLetter() {
+  return alphabet.find((letter) => letter.id === els.drawingLetterSelect.value) || alphabet[0];
+}
+
+function renderDrawingTarget() {
+  const letter = selectedDrawingLetter();
+  els.drawingTarget.textContent = letter.char;
+  els.targetOverlay.textContent = letter.char;
+  els.drawingMeta.textContent = `${letter.roman} · ${letter.type === "vowel" ? "Vokal" : "Konsonant"} · ${letter.sound}`;
+  if (!state.drawingCompared) els.targetOverlay.classList.add("hidden");
+}
+
+function clearCanvas() {
+  canvasContext.clearRect(0, 0, els.drawingCanvas.width, els.drawingCanvas.height);
+  state.drawingCompared = false;
+  els.targetOverlay.classList.add("hidden");
+  els.scoreBar.style.width = "0%";
+  els.scoreCopy.textContent = "Zeichne das Zeichen aus dem Gedächtnis.";
+}
+
+function canvasPoint(event) {
+  const rect = els.drawingCanvas.getBoundingClientRect();
+  return {
+    x: (event.clientX - rect.left) * (els.drawingCanvas.width / rect.width),
+    y: (event.clientY - rect.top) * (els.drawingCanvas.height / rect.height)
+  };
+}
+
+function startDrawing(event) {
+  isDrawing = true;
+  lastPoint = canvasPoint(event);
+  canvasContext.lineCap = "round";
+  canvasContext.lineJoin = "round";
+  canvasContext.strokeStyle = "#111827";
+  canvasContext.lineWidth = 28;
+  els.drawingCanvas.setPointerCapture(event.pointerId);
+}
+
+function draw(event) {
+  if (!isDrawing || !lastPoint) return;
+  const point = canvasPoint(event);
+  canvasContext.beginPath();
+  canvasContext.moveTo(lastPoint.x, lastPoint.y);
+  canvasContext.lineTo(point.x, point.y);
+  canvasContext.stroke();
+  lastPoint = point;
+}
+
+function stopDrawing() {
+  isDrawing = false;
+  lastPoint = null;
+}
+
+function compareDrawing() {
+  const letter = selectedDrawingLetter();
+  const targetCanvas = document.createElement("canvas");
+  targetCanvas.width = els.drawingCanvas.width;
+  targetCanvas.height = els.drawingCanvas.height;
+  const targetContext = targetCanvas.getContext("2d", { willReadFrequently: true });
+  targetContext.fillStyle = "#000";
+  targetContext.textAlign = "center";
+  targetContext.textBaseline = "middle";
+  targetContext.font = "460px Georgia, serif";
+  targetContext.fillText(letter.char, targetCanvas.width / 2, targetCanvas.height / 2 + 12);
+
+  const userData = canvasContext.getImageData(0, 0, els.drawingCanvas.width, els.drawingCanvas.height).data;
+  const targetData = targetContext.getImageData(0, 0, targetCanvas.width, targetCanvas.height).data;
+  let overlap = 0;
+  let drawn = 0;
+  let target = 0;
+
+  for (let index = 3; index < userData.length; index += 16) {
+    const userInk = userData[index] > 30;
+    const targetInk = targetData[index] > 30;
+    if (userInk) drawn += 1;
+    if (targetInk) target += 1;
+    if (userInk && nearbyTargetInk(targetData, index, targetCanvas.width)) overlap += 1;
+  }
+
+  const coverage = target ? Math.min(1, overlap / Math.max(1, target * 0.68)) : 0;
+  const precision = drawn ? Math.min(1, overlap / drawn) : 0;
+  const score = Math.round((coverage * 0.62 + precision * 0.38) * 100);
+  els.targetOverlay.classList.remove("hidden");
+  els.scoreBar.style.width = `${score}%`;
+  els.scoreCopy.textContent = score >= 76
+    ? `${score}% Ähnlichkeit. Direkt nochmal langsam wiederholen.`
+    : score >= 48
+      ? `${score}% Ähnlichkeit. Grundform passt, Details prüfen.`
+      : `${score}% Ähnlichkeit. Nutze die rote Vorlage als Orientierung.`;
+  state.drawingCompared = true;
+}
+
+function nearbyTargetInk(data, alphaIndex, width) {
+  const pixelIndex = (alphaIndex - 3) / 4;
+  const x = pixelIndex % width;
+  const y = Math.floor(pixelIndex / width);
+  const radius = 9;
+  for (let dy = -radius; dy <= radius; dy += 3) {
+    for (let dx = -radius; dx <= radius; dx += 3) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= width) continue;
+      const nextAlpha = ((ny * width + nx) * 4) + 3;
+      if (data[nextAlpha] > 30) return true;
+    }
+  }
+  return false;
+}
+
+function renderWord() {
+  const item = currentWord();
+  const card = ensureCard("word", item);
+  els.wordSymbol.textContent = item.nepali;
+  els.wordDetail.innerHTML = state.wordFlipped ? `<span>${item.roman}</span><em>${item.german}</em>` : " ";
+  els.wordCategory.textContent = item.category;
+  els.wordPhase.textContent = `Phase ${card.phase}`;
+  els.wordDue.textContent = dueLabel(card.nextDue);
+  renderPhaseStrip("word");
+  renderProgress();
+  updateListStates("word");
+}
+
+function renderSentence() {
+  const item = currentSentence();
+  const card = ensureCard("sentence", item);
+  els.sentenceSymbol.textContent = item.nepali;
+  els.sentenceDetail.innerHTML = state.sentenceFlipped ? `<span>${item.roman}</span><em>${item.german}</em>` : " ";
+  els.sentenceCategory.textContent = item.category;
+  els.sentencePhase.textContent = `Phase ${card.phase}`;
+  els.sentenceDue.textContent = dueLabel(card.nextDue);
+  renderPhaseStrip("sentence");
+  renderProgress();
+  updateListStates("sentence");
+}
+
+function dueLabel(nextDue) {
+  if (nextDue <= todayKey()) return "heute fällig";
+  const due = new Date(`${nextDue}T12:00:00`);
+  const now = new Date(`${todayKey()}T12:00:00`);
+  const days = Math.round((due - now) / 86400000);
+  return days === 1 ? "morgen" : `in ${days} Tagen`;
+}
+
+function renderWordList() {
+  els.wordList.innerHTML = "";
+  words.forEach((item, index) => {
+    const button = document.createElement("button");
+    button.className = "word-item";
+    button.dataset.id = item.id;
+    button.innerHTML = cardListMarkup("word", item);
+    button.addEventListener("click", () => {
+      state.wordFilter = "all";
+      state.wordIndex = index;
+      state.wordFlipped = false;
+      setFilterButtons("word", "all");
+      renderWord();
+    });
+    els.wordList.append(button);
+  });
+  updateListStates("word");
+}
+
+function renderSentenceList() {
+  els.sentenceList.innerHTML = "";
+  sentences.forEach((item, index) => {
+    const button = document.createElement("button");
+    button.className = "sentence-item";
+    button.dataset.id = item.id;
+    button.innerHTML = cardListMarkup("sentence", item);
+    button.addEventListener("click", () => {
+      state.sentenceFilter = "all";
+      state.sentenceIndex = index;
+      state.sentenceFlipped = false;
+      setFilterButtons("sentence", "all");
+      renderSentence();
+    });
+    els.sentenceList.append(button);
+  });
+  updateListStates("sentence");
+}
+
+function cardListMarkup(kind, item) {
+  const card = ensureCard(kind, item);
+  return `
+    <strong>${item.nepali}</strong>
+    <span>${item.roman}</span>
+    <span>${item.german}</span>
+    <em>Phase ${card.phase} · ${dueLabel(card.nextDue)}</em>
+  `;
+}
+
+function updateListStates(kind) {
+  const selector = kind === "word" ? ".word-item" : ".sentence-item";
+  const host = kind === "word" ? els.wordList : els.sentenceList;
+  host.querySelectorAll(selector).forEach((button) => {
+    const card = ensureCard(kind, { id: button.dataset.id });
+    button.classList.toggle("known", card.phase >= 6);
+    button.classList.toggle("due", isDue(card));
+    const em = button.querySelector("em");
+    if (em) em.textContent = `Phase ${card.phase} · ${dueLabel(card.nextDue)}`;
+  });
+}
+
+function review(kind, correct) {
+  const item = kind === "word" ? currentWord() : currentSentence();
+  reviewItem(kind, item, correct);
+  if (kind === "word") {
+    state.wordFlipped = false;
+    stepWord(1);
+  } else {
+    state.sentenceFlipped = false;
+    stepSentence(1);
+  }
+}
+
+function reviewItem(kind, item, correct) {
+  const card = ensureCard(kind, item);
+  if (correct) {
+    card.phase = Math.min(6, card.phase + 1);
+    card.correct += 1;
+    state.streak += 1;
+  } else {
+    card.phase = 1;
+    card.wrong += 1;
+    state.streak = 0;
+  }
+  card.lastSeen = todayKey();
+  card.nextDue = todayKey(phaseIntervals[card.phase - 1]);
+  saveProgress();
+  renderProgress();
+  renderPhaseStrip("word");
+  renderPhaseStrip("sentence");
+  updateListStates("word");
+  updateListStates("sentence");
+}
+
+function startLesson() {
+  const steps = buildLessonSteps();
+  state.lesson = {
+    index: 0,
+    steps,
+    selected: [],
+    checked: false,
+    results: {},
+    evaluated: false
+  };
+  renderLesson();
+}
+
+function buildLessonSteps() {
+  const lessonLetterItems = pickLessonItems("letter", 2, 1);
+  const lessonWords = pickLessonItems("word", 4, 1);
+  const lessonSentences = pickLessonItems("sentence", 2, 1);
+  const teachSteps = [
+    ...lessonLetterItems.map((item) => lessonStep("teachLetter", "letter", item)),
+    ...lessonWords.map((item) => lessonStep("teachWord", "word", item)),
+    ...lessonSentences.map((item) => lessonStep("teachSentence", "sentence", item))
+  ];
+  const practiceQueues = [
+    lessonLetterItems.map((item) => lessonStep("letterRecognize", "letter", item, "erkennen")),
+    lessonLetterItems.map((item) => lessonStep("letterWrite", "letter", item, "schreiben")),
+    lessonWords.map((item) => lessonStep("wordRecognize", "word", item, "zuordnen")),
+    lessonSentences.map((item) => lessonStep("sentenceMeaning", "sentence", item, "bedeutung")),
+    lessonWords.map((item) => lessonStep("wordListen", "word", item, "hoeren")),
+    lessonSentences.map((item) => lessonStep("sentenceBuild", "sentence", item, "bauen")),
+    lessonWords.map((item) => lessonStep("wordRecall", "word", item, "erinnern")),
+    lessonSentences.map((item) => lessonStep("sentenceListen", "sentence", item, "hoeren")),
+    lessonSentences.map((item) => lessonStep("sentenceRecall", "sentence", item, "erinnern"))
+  ].map(shuffle);
+
+  return [
+    ...teachSteps,
+    ...interleaveLessonSteps(practiceQueues),
+    { type: "lessonComplete" }
+  ];
+}
+
+function pickLessonItems(kind, count, maxNew = 1) {
+  const items = kind === "letter" ? lessonLetters : kind === "word" ? words : sentences;
+  const due = items.filter((item) => isDue(ensureCard(kind, item)));
+  const newItems = due.filter((item) => isNew(ensureCard(kind, item)));
+  const reviewItems = due.filter((item) => !isNew(ensureCard(kind, item)));
+  const fallbackReviewItems = items.filter((item) => !isNew(ensureCard(kind, item)));
+  const selectedNewItems = kind === "word" ? pickNewWords(newItems, maxNew) : newItems.slice(0, maxNew);
+  const ordered = uniqueItems([...selectedNewItems, ...reviewItems, ...fallbackReviewItems]);
+  if (!ordered.length) return newItems.slice(0, 1);
+  return ordered.slice(0, count);
+}
+
+function pickNewWords(newItems, maxNew) {
+  const numberItems = newItems.filter((item) => item.category === "Zahlen");
+  const hasLearnedNumber = words.some((item) => item.category === "Zahlen" && !isNew(ensureCard("word", item)));
+  if (!hasLearnedNumber && numberItems.length) return numberItems.slice(0, maxNew);
+  return newItems.slice(0, maxNew);
+}
+
+function uniqueItems(items) {
+  const seen = new Set();
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
+function lessonStep(type, kind, item, skill = null) {
+  return { type, unit: unitKey(kind, item), kind, item, skill };
+}
+
+function interleaveLessonSteps(queues) {
+  const openQueues = queues.filter((queue) => queue.length);
+  const mixed = [];
+  let cursor = 0;
+  while (openQueues.some((queue) => queue.length)) {
+    let queueIndex = -1;
+    for (let offset = 0; offset < openQueues.length; offset += 1) {
+      const index = (cursor + offset) % openQueues.length;
+      const queue = openQueues[index];
+      if (!queue.length) continue;
+      const last = mixed[mixed.length - 1];
+      if (!last || last.unit !== queue[0].unit) {
+        queueIndex = index;
+        break;
+      }
+    }
+    if (queueIndex < 0) {
+      queueIndex = openQueues.findIndex((candidate) => candidate.length);
+    }
+    const queue = openQueues[queueIndex];
+    mixed.push(queue.shift());
+    cursor = (queueIndex + 1) % openQueues.length;
+  }
+  return mixed;
+}
+
+function unitKey(kind, item) {
+  return `${kind}:${item.id}`;
+}
+
+function renderLesson() {
+  const step = state.lesson.steps[state.lesson.index];
+  const total = Math.max(1, state.lesson.steps.length);
+  els.lessonProgressBar.style.width = `${Math.round((state.lesson.index / total) * 100)}%`;
+  els.lessonFeedback.className = "lesson-feedback hidden";
+  els.lessonFeedback.textContent = "";
+  els.lessonContinueButton.disabled = false;
+  els.lessonContinueButton.textContent = step ? lessonButtonText(step) : "Neue Übung";
+  if (!step) {
+    els.lessonProgressBar.style.width = "100%";
+    els.lessonPathTitle.textContent = "Lektion fertig";
+    els.lessonPathMeta.textContent = "Nächsten gemischten Lauf starten";
+    els.lessonStage.innerHTML = `
+      <div class="lesson-complete">
+        <p class="lesson-kicker">Lektion fertig</p>
+        <h2>Bereit für die nächste Runde!</h2>
+        <p>Der nächste Lauf mischt neue und fällige Buchstaben, Wörter und Sätze wieder anders.</p>
+      </div>
+    `;
+    return;
+  }
+  els.lessonPathTitle.textContent = step.kind === "letter" ? "Buchstaben und Schreiben" : step.kind === "sentence" ? "Gemischtes Satztraining" : step.kind === "word" ? "Gemischtes Worttraining" : "Auswertung";
+  els.lessonPathMeta.textContent = step.item ? phaseLabel(step.kind, step.item) : "Schauen, was schon sitzt";
+  state.lesson.selected = [];
+  state.lesson.checked = false;
+  if (step.type === "teachLetter") renderTeachLetterStep(step);
+  if (step.type === "letterRecognize") renderLetterRecognizeStep(step);
+  if (step.type === "letterWrite") renderLetterWriteStep(step);
+  if (step.type === "teachWord") renderTeachWordStep(step);
+  if (step.type === "wordRecognize") renderWordRecognizeStep(step);
+  if (step.type === "wordRecall") renderRecallStep(step);
+  if (step.type === "wordListen") renderListenStep(step);
+  if (step.type === "teachSentence") renderTeachSentenceStep(step);
+  if (step.type === "sentenceMeaning") renderSentenceMeaningStep(step);
+  if (step.type === "sentenceBuild") renderBuildSentenceStep(step);
+  if (step.type === "sentenceListen") renderListenStep(step);
+  if (step.type === "sentenceRecall") renderRecallStep(step);
+  if (step.type === "lessonComplete") renderLessonCompleteStep();
+  bindRomanToggle(step);
+}
+
+function phaseLabel(kind, item) {
+  const card = ensureCard(kind, item);
+  return `Phase ${card.phase}`;
+}
+
+function lessonButtonText(step) {
+  if (isTeachingStep(step)) return "Weiter";
+  if (step.type === "lessonComplete") return state.lesson.evaluated ? "Neue Übung" : "Phasen aktualisieren";
+  return "Überprüfen";
+}
+
+function isTeachingStep(step) {
+  return step.type === "teachLetter" || step.type === "teachWord" || step.type === "teachSentence";
+}
+
+function lessonHeadingMarkup(step, title) {
+  return `
+    <div class="lesson-heading-row">
+      <h2>${title}</h2>
+      <button class="roman-toggle" data-roman-toggle="${step.type}" type="button" aria-pressed="${shouldShowRoman(step)}">
+        ${lessonTypeLabels[step.type] || "Diese Aufgabe"}: Lautschrift ${shouldShowRoman(step) ? "an" : "aus"}
+      </button>
+    </div>
+  `;
+}
+
+function bindRomanToggle(step) {
+  const button = els.lessonStage.querySelector("[data-roman-toggle]");
+  if (!button) return;
+  button.addEventListener("click", () => {
+    state.lessonRoman[step.type] = !shouldShowRoman(step);
+    saveLessonSettings();
+    renderLesson();
+  });
+}
+
+function shouldShowRoman(step) {
+  return state.lessonRoman[step.type] !== false;
+}
+
+function romanLine(item, step) {
+  return shouldShowRoman(step) ? `<span class="roman-line">${item.roman}</span>` : "";
+}
+
+function renderTeachLetterStep(step) {
+  els.lessonStage.innerHTML = `
+    ${lessonHeadingMarkup(step, "Neuer Buchstabe: ansehen und anhören")}
+    <div class="lesson-intro-card letter-intro-card">
+      <div class="lesson-word-lines">
+        <strong>${step.item.char}</strong>
+        ${romanLine(step.item, step)}
+        <em>${step.item.sound}</em>
+      </div>
+      <button class="audio-split" data-audio-kind="letter" type="button" aria-label="Buchstabe anhören">🔊</button>
+    </div>
+  `;
+  bindLessonAudio(step.item, null);
+  window.setTimeout(() => playItem(step.item), 150);
+}
+
+function renderLetterRecognizeStep(step) {
+  const options = optionSet(lessonLetters, step.item, "roman", 4);
+  els.lessonStage.innerHTML = `
+    ${lessonHeadingMarkup(step, "Wähle den richtigen Buchstaben")}
+    <div class="lesson-prompt-card">
+      <span>${step.item.roman}</span>
+      <button class="audio-square" data-audio-kind="letter" type="button" aria-label="Anhören">🔊</button>
+    </div>
+    <div class="answer-grid letter-answer-grid">
+      ${options.map((item) => `
+        <button class="answer-card letter-answer-card" data-correct="${item.id === step.item.id}">
+          <strong>${item.char}</strong>
+          ${romanLine(item, step)}
+        </button>
+      `).join("")}
+    </div>
+  `;
+  bindLessonOptions();
+  bindLessonAudio(step.item, null);
+}
+
+function renderLetterWriteStep(step) {
+  els.lessonStage.innerHTML = `
+    ${lessonHeadingMarkup(step, "Schreibe den Buchstaben")}
+    <div class="lesson-writing">
+      <canvas class="lesson-canvas" id="lessonWritingCanvas" width="520" height="520" aria-label="Buchstaben zeichnen"></canvas>
+      <div class="lesson-writing-side">
+        <p>Zeichne <strong>${step.item.roman}</strong> aus dem Gedächtnis.</p>
+        <button class="secondary-button" id="lessonShowLetterButton">Vorlage zeigen</button>
+        <button class="secondary-button" id="lessonClearCanvasButton">Löschen</button>
+        <div class="recall-answer hidden" id="lessonLetterAnswer">
+          <strong>${step.item.char}</strong>
+          ${romanLine(step.item, step)}
+        </div>
+      </div>
+    </div>
+    <div class="recall-actions" id="recallActions">
+      <button class="secondary-button danger-button" data-self-check="false">Nicht gewusst</button>
+      <button class="secondary-button success-button" data-self-check="true">Gewusst</button>
+    </div>
+  `;
+  bindLessonWritingCanvas();
+  bindLessonSelfCheck();
+  $("#lessonShowLetterButton").addEventListener("click", () => {
+    $("#lessonLetterAnswer").classList.remove("hidden");
+    playItem(step.item);
+  });
+  $("#lessonClearCanvasButton").addEventListener("click", clearLessonWritingCanvas);
+}
+
+function renderTeachWordStep(step) {
+  els.lessonStage.innerHTML = `
+    ${lessonHeadingMarkup(step, "Neues Wort: erst ansehen und anhören")}
+    <div class="lesson-intro-card">
+      <div class="lesson-word-lines">
+        <strong>${step.item.nepali}</strong>
+        ${romanLine(step.item, step)}
+        <em>${step.item.german}</em>
+      </div>
+      <button class="audio-split" data-audio-kind="word" type="button" aria-label="Wort anhören">🔊</button>
+    </div>
+  `;
+  bindLessonAudio(step.item, null);
+  window.setTimeout(() => playItem(step.item), 150);
+}
+
+function renderTeachSentenceStep(step) {
+  els.lessonStage.innerHTML = `
+    ${lessonHeadingMarkup(step, "Neuer Satz: Bedeutung und Aussprache")}
+    <div class="lesson-intro-card sentence-intro-card">
+      <div class="lesson-word-lines">
+        <strong>${step.item.nepali}</strong>
+        ${romanLine(step.item, step)}
+        <em>${step.item.german}</em>
+      </div>
+      <button class="audio-split" data-audio-kind="sentence" type="button" aria-label="Satz anhören">🔊</button>
+    </div>
+  `;
+  bindLessonAudio(null, step.item);
+  window.setTimeout(() => playItem(step.item), 150);
+}
+
+function renderWordRecognizeStep(step) {
+  const options = optionSet(words, step.item, "german", 4);
+  els.lessonStage.innerHTML = `
+    ${lessonHeadingMarkup(step, "Wähle die richtige Antwort")}
+    <div class="lesson-prompt-card">
+      <span>${step.item.german}</span>
+      <button class="audio-square" data-audio-kind="word" type="button" aria-label="Anhören">🔊</button>
+    </div>
+    <div class="answer-grid">
+      ${options.map((item) => optionButtonMarkup(item, item.id === step.item.id, step)).join("")}
+    </div>
+  `;
+  bindLessonOptions();
+  if (shouldShowRoman(step)) bindAnswerAudio(options);
+  bindLessonAudio(step.item, null);
+}
+
+function renderSentenceMeaningStep(step) {
+  const options = optionSet(sentences, step.item, "german", 4);
+  els.lessonStage.innerHTML = `
+    ${lessonHeadingMarkup(step, "Wähle die passende Bedeutung")}
+    <div class="lesson-prompt-card tall">
+      <div>
+        <strong>${step.item.nepali}</strong>
+        ${romanLine(step.item, step)}
+      </div>
+      <button class="audio-square" data-audio-kind="sentence" type="button" aria-label="Anhören">🔊</button>
+    </div>
+    <div class="choice-list">
+      ${options.map((item) => `<button class="choice-answer" data-correct="${item.id === step.item.id}">${item.german}</button>`).join("")}
+    </div>
+  `;
+  bindLessonOptions();
+  bindLessonAudio(null, step.item);
+}
+
+function renderListenStep(step) {
+  const items = step.kind === "word" ? words : sentences;
+  const options = optionSet(items, step.item, "roman", 4);
+  els.lessonStage.innerHTML = `
+    ${lessonHeadingMarkup(step, "Was hast du gehört?")}
+    <button class="big-audio-button" data-audio-kind="${step.kind}" type="button" aria-label="Anhören">🔊</button>
+    <div class="choice-list">
+      ${options.map((item) => `
+        <button class="choice-answer stacked" data-correct="${item.id === step.item.id}">
+          <strong>${item.nepali}</strong>
+          ${romanLine(item, step)}
+        </button>
+      `).join("")}
+    </div>
+  `;
+  bindLessonOptions();
+  bindLessonAudio(step.kind === "word" ? step.item : null, step.kind === "sentence" ? step.item : null);
+  window.setTimeout(() => playItem(step.item), 150);
+}
+
+function renderBuildSentenceStep(step) {
+  const correctWords = tokenizeGerman(step.item.german);
+  const distractors = shuffle([
+    "ich", "du", "sie", "wir", "nicht", "gut", "bitte", "morgen", "heute", "wasser",
+    "tee", "reis", "hier", "dort", "ist", "bin", "sind", "ein", "eine", "das",
+    "der", "die", "gehen", "brauche", "sprechen", "langsam", "klein", "groß"
+  ])
+    .filter((word) => !correctWords.includes(word.toLowerCase()))
+    .slice(0, 8);
+  const chips = shuffle([...correctWords, ...distractors]);
+  els.lessonStage.innerHTML = `
+    ${lessonHeadingMarkup(step, "Übersetze diesen Satz")}
+    <div class="lesson-prompt-card tall">
+      <div>
+        <strong>${step.item.nepali}</strong>
+        ${romanLine(step.item, step)}
+      </div>
+      <button class="audio-square" data-audio-kind="sentence" type="button" aria-label="Anhören">🔊</button>
+    </div>
+    <div class="build-slots" id="buildSlots">${correctWords.map(() => "<span></span>").join("")}</div>
+    <div class="chip-bank">
+      ${chips.map((word) => `<button class="word-chip" data-word="${word}">${word}</button>`).join("")}
+    </div>
+  `;
+  bindBuildChips(correctWords);
+  bindLessonAudio(null, step.item);
+}
+
+function renderRecallStep(step) {
+  const isSentence = step.kind === "sentence";
+  els.lessonStage.innerHTML = `
+    ${lessonHeadingMarkup(step, isSentence ? "Erinnere dich an den Nepali-Satz" : "Wie heißt das Wort auf Nepali?")}
+    <div class="recall-card" id="recallCard">
+      <p>${step.item.german}</p>
+      <button class="secondary-button" id="revealRecallButton">Aufdecken</button>
+      <div class="recall-answer hidden" id="recallAnswer">
+        <strong>${step.item.nepali}</strong>
+        ${romanLine(step.item, step)}
+      </div>
+    </div>
+    <div class="recall-actions hidden" id="recallActions">
+      <button class="secondary-button danger-button" data-self-check="false">Nicht gewusst</button>
+      <button class="secondary-button success-button" data-self-check="true">Gewusst</button>
+    </div>
+  `;
+  $("#revealRecallButton").addEventListener("click", () => {
+    $("#recallAnswer").classList.remove("hidden");
+    $("#recallActions").classList.remove("hidden");
+    playItem(step.item);
+  });
+  bindLessonSelfCheck();
+}
+
+function bindLessonSelfCheck() {
+  els.lessonContinueButton.disabled = true;
+  els.lessonStage.querySelectorAll("[data-self-check]").forEach((button) => {
+    button.addEventListener("click", () => {
+      els.lessonStage.querySelectorAll("[data-self-check]").forEach((item) => item.classList.remove("selected"));
+      button.classList.add("selected");
+      state.lesson.selected = [button];
+      els.lessonContinueButton.disabled = false;
+    });
+  });
+}
+
+function bindLessonWritingCanvas() {
+  const canvas = $("#lessonWritingCanvas");
+  const context = canvas.getContext("2d");
+  let drawing = false;
+  let previous = null;
+  context.lineWidth = 18;
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  context.strokeStyle = "#334855";
+
+  const point = (event) => {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (event.clientX - rect.left) * (canvas.width / rect.width),
+      y: (event.clientY - rect.top) * (canvas.height / rect.height)
+    };
+  };
+  const drawPoint = (event) => {
+    if (!drawing) return;
+    const next = point(event);
+    context.beginPath();
+    context.moveTo(previous.x, previous.y);
+    context.lineTo(next.x, next.y);
+    context.stroke();
+    previous = next;
+  };
+  canvas.addEventListener("pointerdown", (event) => {
+    drawing = true;
+    previous = point(event);
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener("pointermove", drawPoint);
+  canvas.addEventListener("pointerup", () => {
+    drawing = false;
+    previous = null;
+  });
+  canvas.addEventListener("pointercancel", () => {
+    drawing = false;
+    previous = null;
+  });
+}
+
+function clearLessonWritingCanvas() {
+  const canvas = $("#lessonWritingCanvas");
+  if (!canvas) return;
+  canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function optionButtonMarkup(item, correct, step) {
+  return `
+    <button class="answer-card" data-correct="${correct}" data-item-id="${item.id}">
+      <strong>${item.nepali}</strong>
+      ${romanLine(item, step)}
+    </button>
+  `;
+}
+
+function bindAnswerAudio(options) {
+  els.lessonStage.querySelectorAll("[data-item-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const item = options.find((candidate) => candidate.id === button.dataset.itemId);
+      if (item) playItem(item);
+    });
+  });
+}
+
+function bindLessonAudio(word, sentence) {
+  els.lessonStage.querySelectorAll("[data-audio-kind]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const item = button.dataset.audioKind === "sentence" ? sentence : word;
+      if (item) playItem(item);
+    });
+  });
+}
+
+function bindLessonOptions() {
+  els.lessonContinueButton.disabled = true;
+  els.lessonStage.querySelectorAll("[data-correct]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (state.lesson.checked) return;
+      els.lessonStage.querySelectorAll("[data-correct]").forEach((item) => item.classList.remove("selected"));
+      button.classList.add("selected");
+      state.lesson.selected = [button];
+      els.lessonContinueButton.disabled = false;
+    });
+  });
+}
+
+function bindBuildChips(correctWords) {
+  els.lessonContinueButton.disabled = true;
+  state.lesson.selected = [];
+  els.lessonStage.querySelectorAll(".word-chip").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (state.lesson.checked) return;
+      if (button.classList.contains("selected")) {
+        button.classList.remove("selected");
+        state.lesson.selected = state.lesson.selected.filter((item) => item !== button);
+      } else {
+        button.classList.add("selected");
+        state.lesson.selected.push(button);
+      }
+      renderBuildSlots(correctWords);
+      els.lessonContinueButton.disabled = state.lesson.selected.length !== correctWords.length;
+    });
+  });
+}
+
+function renderBuildSlots(correctWords) {
+  const slots = $("#buildSlots");
+  slots.innerHTML = "";
+  correctWords.forEach((_, index) => {
+    const span = document.createElement("span");
+    span.textContent = state.lesson.selected[index]?.dataset.word || "";
+    slots.append(span);
+  });
+}
+
+function continueLesson() {
+  const step = state.lesson.steps[state.lesson.index];
+  if (!step) {
+    startLesson();
+    return;
+  }
+  if (isTeachingStep(step)) {
+    state.lesson.index += 1;
+    renderLesson();
+    return;
+  }
+  if (step.type === "lessonComplete") {
+    if (!state.lesson.evaluated) {
+      evaluateLessonRun();
+      state.lesson.evaluated = true;
+      renderLesson();
+      return;
+    }
+    startLesson();
+    return;
+  }
+  if (!state.lesson.checked) {
+    checkLessonAnswer(step);
+    return;
+  }
+  state.lesson.index += 1;
+  renderLesson();
+}
+
+function checkLessonAnswer(step) {
+  let correct = false;
+  if (step.type === "sentenceBuild") {
+    const answer = state.lesson.selected.map((button) => button.dataset.word.toLowerCase()).join(" ");
+    correct = answer === tokenizeGerman(step.item.german).join(" ");
+  } else if (step.type === "wordRecall" || step.type === "sentenceRecall" || step.type === "letterWrite") {
+    correct = state.lesson.selected[0]?.dataset.selfCheck === "true";
+  } else {
+    correct = state.lesson.selected[0]?.dataset.correct === "true";
+  }
+  state.lesson.checked = true;
+  playAnswerAfterCheckIfNeeded(step);
+  recordLessonResult(step, correct);
+  if (step.type === "wordRecall" || step.type === "sentenceRecall" || step.type === "letterWrite") {
+    if (correct) {
+      showLessonFeedback("correct", "Gut erinnert!", randomCopy("recallCorrect"));
+      state.streak += 1;
+    } else {
+      showLessonFeedback("wrong", "Leider nicht gewusst", randomCopy("recallWrong"));
+      state.streak = 0;
+    }
+  } else if (correct) {
+    showLessonFeedback("correct", "Richtig!", randomCopy("correct"));
+    state.streak += 1;
+  } else {
+    showLessonFeedback("wrong", "Leider falsch", `${randomCopy("wrong")}<br>${correctAnswerText(step)}`);
+    state.streak = 0;
+  }
+  saveProgress();
+  renderProgress();
+  markLessonAnswers(correct);
+  els.lessonContinueButton.disabled = false;
+  els.lessonContinueButton.textContent = "Weiter";
+}
+
+function playAnswerAfterCheckIfNeeded(step) {
+  if (step.type === "sentenceMeaning") {
+    playItem(step.item);
+    return;
+  }
+  if (shouldShowRoman(step)) return;
+  if (step.type !== "wordRecognize") return;
+  const selectedId = state.lesson.selected[0]?.dataset.itemId;
+  const item = words.find((candidate) => candidate.id === selectedId);
+  if (item) playItem(item);
+}
+
+function randomCopy(kind) {
+  const options = feedbackCopy[kind] || [""];
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+function recordLessonResult(step, correct) {
+  if (!state.lesson.results[step.unit]) state.lesson.results[step.unit] = {};
+  state.lesson.results[step.unit][step.skill] = correct;
+}
+
+function renderLessonCompleteStep() {
+  const summary = lessonRunSummary();
+  els.lessonContinueButton.textContent = state.lesson.evaluated ? "Neue Übung" : "Phasen aktualisieren";
+  els.lessonStage.innerHTML = `
+    <div class="lesson-complete">
+      <p class="lesson-kicker">${state.lesson.evaluated ? "Bewertet" : "Auswertung"}</p>
+      <h2>${lessonCompleteTitle(summary)}</h2>
+      <p>${lessonCompleteText(summary)}</p>
+      <div class="lesson-summary-grid">
+        <span><strong>${summary.passed}</strong> sicher gewusst</span>
+        <span><strong>${summary.failed}</strong> nochmal üben</span>
+      </div>
+    </div>
+  `;
+}
+
+function unitPassed(unit) {
+  const values = Object.values(state.lesson.results[unit] || {});
+  return values.length > 0 && values.every(Boolean);
+}
+
+function lessonRunSummary() {
+  return lessonUnits().reduce((summary, unit) => {
+    if (unitPassed(unit.key)) summary.passed += 1;
+    else summary.failed += 1;
+    return summary;
+  }, { passed: 0, failed: 0 });
+}
+
+function lessonUnits() {
+  const byUnit = new Map();
+  state.lesson.steps.forEach((step) => {
+    if (!step.item || !step.kind || !step.skill) return;
+    if (!byUnit.has(step.unit)) byUnit.set(step.unit, { key: step.unit, kind: step.kind, item: step.item });
+  });
+  return Array.from(byUnit.values());
+}
+
+function lessonCompleteTitle(summary) {
+  if (!state.lesson.evaluated) return "Runde geschafft!";
+  if (summary.failed === 0) return "Stark, das saß richtig gut!";
+  if (summary.passed === 0) return "Guter Anfang, wir festigen das!";
+  return "Gut gemacht, ein Teil sitzt schon!";
+}
+
+function lessonCompleteText(summary) {
+  if (!state.lesson.evaluated) {
+    return "Schau dir kurz an, was schon sicher sitzt und was du in der nächsten Runde nochmal bekommst.";
+  }
+  if (summary.failed === 0) return "Alles aus dieser Runde sitzt. Beim nächsten Mal darf es ruhig etwas gemischter werden.";
+  if (summary.passed === 0) return "Das sitzt noch nicht sicher genug, aber genau dafür ist die Wiederholung da. Du bekommst diese Inhalte wieder.";
+  return "Was sicher war, zählt als geschafft. Was noch wackelt, kommt nochmal dran.";
+}
+
+function evaluateLessonRun() {
+  lessonUnits().forEach((unit) => reviewItem(unit.kind, unit.item, unitPassed(unit.key)));
+}
+
+function showLessonFeedback(status, title, text) {
+  els.lessonFeedback.className = `lesson-feedback ${status}`;
+  els.lessonFeedback.innerHTML = `<strong>${title}</strong><span>${text}</span>`;
+}
+
+function correctAnswerText(step) {
+  if (step.type === "sentenceBuild" || step.type === "sentenceMeaning" || step.type === "sentenceListen") {
+    return `Richtige Antwort: ${step.item.german}`;
+  }
+  if (step.kind === "letter") {
+    return `Richtige Antwort:<br>${step.item.char}<br>${step.item.roman}`;
+  }
+  return `Richtige Antwort:<br>${step.item.nepali}<br>${step.item.roman}`;
+}
+
+function markLessonAnswers(correct) {
+  if (correct && state.lesson.selected[0]) state.lesson.selected[0].classList.add("correct");
+  if (!correct) {
+    state.lesson.selected.forEach((button) => button.classList.add("wrong"));
+    els.lessonStage.querySelectorAll('[data-correct="true"]').forEach((button) => button.classList.add("correct"));
+  }
+}
+
+function optionSet(items, correctItem, field, count) {
+  const distractors = shuffle(items.filter((item) => item.id !== correctItem.id && item[field] !== correctItem[field])).slice(0, count - 1);
+  return shuffle([correctItem, ...distractors]);
+}
+
+function shuffle(items) {
+  return [...items].sort(() => Math.random() - 0.5);
+}
+
+function sentenceForWord(word) {
+  const search = word.nepali.replace(/[।?]/g, "");
+  return sentences.find((sentence) => sentence.nepali.includes(search));
+}
+
+function tokenizeGerman(text) {
+  return text
+    .toLowerCase()
+    .replace(/[.,!?]/g, "")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function stepWord(delta) {
+  const items = filteredItems("word");
+  state.wordIndex = clampIndex(state.wordIndex + delta, items.length);
+  renderWord();
+}
+
+function stepSentence(delta) {
+  const items = filteredItems("sentence");
+  state.sentenceIndex = clampIndex(state.sentenceIndex + delta, items.length);
+  renderSentence();
+}
+
+function setFilterButtons(kind, value) {
+  const attr = kind === "word" ? "wordFilter" : "sentenceFilter";
+  $$(`[data-${kind}-filter]`).forEach((button) => {
+    button.classList.toggle("active", button.dataset[attr] === value);
+  });
+}
+
+function renderPhrases() {
+  els.phraseSelect.innerHTML = "";
+  sentences.forEach((phrase, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = phrase.german;
+    els.phraseSelect.append(option);
+  });
+  renderCurrentPhrase();
+}
+
+function renderCurrentPhrase() {
+  const phrase = sentences[Number(els.phraseSelect.value)] || sentences[0];
+  els.phraseNepali.textContent = phrase.nepali;
+  els.phraseRoman.textContent = phrase.roman;
+  els.phraseGerman.textContent = phrase.german;
+  els.nativePlayback.classList.add("hidden");
+}
+
+async function playItem(item, visible = false) {
+  if (state.activeAudio) {
+    state.activeAudio.pause();
+    state.activeAudio = null;
+  }
+  if (item.audio) {
+    try {
+      const player = visible ? els.nativePlayback : new Audio();
+      player.src = item.audio;
+      player.currentTime = 0;
+      if (visible) player.classList.remove("hidden");
+      state.activeAudio = player;
+      await player.play();
+      return;
+    } catch {
+      speak(item.nepali);
+      return;
+    }
+  }
+  speak(item.nepali || item.char);
+}
+
+function speak(text) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  const voices = window.speechSynthesis.getVoices();
+  utterance.lang = "hi-IN";
+  const voice = voices.find((item) => item.lang.toLowerCase().startsWith("ne"))
+    || voices.find((item) => item.lang.toLowerCase().startsWith("hi"))
+    || voices.find((item) => item.lang.toLowerCase() === "en-in");
+  if (voice) {
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+  }
+  utterance.rate = 0.82;
+  window.speechSynthesis.speak(utterance);
+}
+
+async function toggleRecording() {
+  if (state.mediaRecorder?.state === "recording") {
+    state.mediaRecorder.stop();
+    return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    els.recordingStatus.textContent = "Audioaufnahme wird in diesem Browser nicht unterstützt.";
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    state.recordingChunks = [];
+    state.mediaRecorder = new MediaRecorder(stream);
+    state.mediaRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data.size) state.recordingChunks.push(event.data);
+    });
+    state.mediaRecorder.addEventListener("stop", () => {
+      const blob = new Blob(state.recordingChunks, { type: state.mediaRecorder.mimeType });
+      els.recordingPlayback.src = URL.createObjectURL(blob);
+      els.recordingPlayback.classList.remove("hidden");
+      els.recordingStatus.textContent = "Aufnahme fertig. Vergleiche sie mit der Vorlage.";
+      els.recordButton.textContent = "Aufnehmen";
+      stream.getTracks().forEach((track) => track.stop());
+    });
+    state.mediaRecorder.start();
+    els.recordingStatus.textContent = "Aufnahme läuft.";
+    els.recordButton.textContent = "Stoppen";
+  } catch {
+    els.recordingStatus.textContent = "Mikrofonzugriff wurde nicht erlaubt.";
+  }
+}
+
+function bindEvents() {
+  els.tabs.forEach((tab) => tab.addEventListener("click", () => setView(tab.dataset.view)));
+  $$(".segment[data-alphabet-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.alphabetFilter = button.dataset.alphabetFilter;
+      state.letterIndex = 0;
+      state.letterFlipped = false;
+      $$(".segment[data-alphabet-filter]").forEach((segment) => segment.classList.toggle("active", segment === button));
+      renderLetterGrid();
+      renderLetter();
+    });
+  });
+  $$(".segment[data-word-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.wordFilter = button.dataset.wordFilter;
+      state.wordIndex = 0;
+      state.wordFlipped = false;
+      setFilterButtons("word", state.wordFilter);
+      renderWord();
+    });
+  });
+  $$(".segment[data-sentence-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.sentenceFilter = button.dataset.sentenceFilter;
+      state.sentenceIndex = 0;
+      state.sentenceFlipped = false;
+      setFilterButtons("sentence", state.sentenceFilter);
+      renderSentence();
+    });
+  });
+  els.letterCard.addEventListener("click", () => {
+    state.letterFlipped = !state.letterFlipped;
+    renderLetter();
+  });
+  els.prevLetterButton.addEventListener("click", () => {
+    state.letterIndex -= 1;
+    state.letterFlipped = false;
+    renderLetter();
+  });
+  els.nextLetterButton.addEventListener("click", () => {
+    state.letterIndex += 1;
+    state.letterFlipped = false;
+    renderLetter();
+  });
+  els.speakLetterButton.addEventListener("click", () => playItem(currentLetter()));
+  els.toggleKnownLetterButton.addEventListener("click", () => {
+    const letter = currentLetter();
+    toggleSet(state.knownLetters, letter.id);
+    saveProgress();
+    renderLetter();
+  });
+
+  els.drawingLetterSelect.addEventListener("change", () => {
+    clearCanvas();
+    renderDrawingTarget();
+  });
+  els.drawingCanvas.addEventListener("pointerdown", startDrawing);
+  els.drawingCanvas.addEventListener("pointermove", draw);
+  els.drawingCanvas.addEventListener("pointerup", stopDrawing);
+  els.drawingCanvas.addEventListener("pointercancel", stopDrawing);
+  els.compareButton.addEventListener("click", compareDrawing);
+  els.clearCanvasButton.addEventListener("click", clearCanvas);
+
+  els.wordCard.addEventListener("click", () => {
+    state.wordFlipped = !state.wordFlipped;
+    renderWord();
+  });
+  els.prevWordButton.addEventListener("click", () => stepWord(-1));
+  els.nextWordButton.addEventListener("click", () => stepWord(1));
+  els.speakWordButton.addEventListener("click", () => playItem(currentWord()));
+  els.rightWordButton.addEventListener("click", () => review("word", true));
+  els.wrongWordButton.addEventListener("click", () => review("word", false));
+
+  els.sentenceCard.addEventListener("click", () => {
+    state.sentenceFlipped = !state.sentenceFlipped;
+    renderSentence();
+  });
+  els.prevSentenceButton.addEventListener("click", () => stepSentence(-1));
+  els.nextSentenceButton.addEventListener("click", () => stepSentence(1));
+  els.speakSentenceButton.addEventListener("click", () => playItem(currentSentence()));
+  els.rightSentenceButton.addEventListener("click", () => review("sentence", true));
+  els.wrongSentenceButton.addEventListener("click", () => review("sentence", false));
+
+  els.phraseSelect.addEventListener("change", renderCurrentPhrase);
+  els.playPhraseButton.addEventListener("click", () => {
+    const phrase = sentences[Number(els.phraseSelect.value)] || sentences[0];
+    playItem(phrase, true);
+  });
+  els.recordButton.addEventListener("click", toggleRecording);
+  els.lessonResetButton.addEventListener("click", startLesson);
+  els.lessonContinueButton.addEventListener("click", continueLesson);
+  els.installHelpButton.addEventListener("click", () => els.installDialog.showModal());
+}
+
+function toggleSet(set, value) {
+  if (set.has(value)) {
+    set.delete(value);
+  } else {
+    set.add(value);
+  }
+}
+
+function registerServiceWorker() {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+}
+
+function initCards() {
+  allLearningItems().forEach(({ kind, item }) => ensureCard(kind, item));
+}
+
+function init() {
+  loadProgress();
+  loadLessonSettings();
+  initCards();
+  bindEvents();
+  renderLetterGrid();
+  renderDrawingSelect();
+  renderWordList();
+  renderSentenceList();
+  renderPhrases();
+  renderProgress();
+  renderLetter();
+  renderDrawingTarget();
+  renderWord();
+  renderSentence();
+  startLesson();
+  registerServiceWorker();
+}
+
+init();

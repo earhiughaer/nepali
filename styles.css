@@ -1,0 +1,1278 @@
+:root {
+  color-scheme: light;
+  --paper: #f7fafc;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #d9e2ec;
+  --leaf: #0f766e;
+  --leaf-dark: #115e59;
+  --saffron: #f59e0b;
+  --rose: #e11d48;
+  --sky: #dbeafe;
+  --blue: #2563eb;
+  --white: #ffffff;
+  --shadow: 0 18px 50px rgba(15, 23, 42, 0.11);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, #ecfeff 0, var(--paper) 280px),
+    var(--paper);
+  color: var(--ink);
+}
+
+button,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  width: min(1120px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: max(18px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom));
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0 18px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+h2 {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.eyebrow {
+  color: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.icon-button,
+.round-button {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.icon-button span {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.progress-band {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 8px;
+  background: rgba(15, 118, 110, 0.12);
+  box-shadow: var(--shadow);
+}
+
+.progress-band > div {
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.metric {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 850;
+}
+
+.metric-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 6px;
+  margin: 18px -2px 22px;
+  padding: 8px 2px;
+  background: rgba(247, 250, 252, 0.94);
+  backdrop-filter: blur(12px);
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab,
+.segment,
+.primary-button,
+.secondary-button,
+select {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 13px;
+  color: var(--ink);
+  background: var(--white);
+}
+
+.tab {
+  flex: 1 0 112px;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.tab.active,
+.segment.active {
+  border-color: var(--leaf);
+  background: var(--leaf);
+  color: white;
+}
+
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.lesson-shell {
+  max-width: 880px;
+  min-height: 560px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  gap: 18px;
+}
+
+.lesson-top {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.lesson-top h2 {
+  font-size: 1.35rem;
+}
+
+#lessonPathMeta {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.lesson-progress {
+  overflow: hidden;
+  height: 9px;
+  border-radius: 999px;
+  background: #e7eef5;
+}
+
+.lesson-progress span {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--leaf);
+  transition: width 180ms ease;
+}
+
+.lesson-stage {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+}
+
+.lesson-stage h2 {
+  color: var(--ink);
+  font-size: clamp(1.35rem, 4vw, 2.1rem);
+  line-height: 1.25;
+}
+
+.lesson-heading-row {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.roman-toggle {
+  flex: 0 0 auto;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--muted);
+  padding: 0 12px;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.roman-toggle[aria-pressed="true"] {
+  border-color: rgba(34, 197, 94, 0.38);
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.audio-square,
+.big-audio-button,
+.audio-split {
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font-size: 1.25rem;
+}
+
+.lesson-intro-card,
+.lesson-example-card,
+.lesson-prompt-card {
+  overflow: hidden;
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.lesson-intro-card {
+  grid-template-columns: minmax(0, 1fr) 78px;
+  align-items: center;
+}
+
+.lesson-word-lines {
+  display: grid;
+  gap: 8px;
+  padding: 24px;
+}
+
+.lesson-word-lines strong,
+.lesson-example-card strong,
+.lesson-prompt-card strong,
+.choice-answer strong,
+.answer-card strong {
+  color: #334855;
+  font-family: Georgia, "Noto Serif Devanagari", "Kohinoor Devanagari", serif;
+  font-size: clamp(2rem, 8vw, 3.2rem);
+  line-height: 1.15;
+}
+
+.lesson-word-lines span,
+.lesson-example-card span,
+.lesson-prompt-card span,
+.choice-answer span,
+.answer-card span {
+  color: #6b8292;
+  font-size: clamp(1.35rem, 5vw, 2rem);
+  line-height: 1.25;
+}
+
+.lesson-word-lines em,
+.lesson-example-card em {
+  color: #334855;
+  font-size: 1.35rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.lesson-example-card {
+  grid-template-columns: 1fr 78px;
+  align-items: stretch;
+  padding: 20px 0 20px 24px;
+}
+
+.lesson-example-card > div {
+  display: grid;
+  gap: 8px;
+}
+
+.audio-split {
+  align-self: center;
+  width: 52px;
+  height: 52px;
+  margin-right: 16px;
+  font-size: 1.4rem;
+}
+
+.lesson-prompt-card {
+  grid-template-columns: 1fr 68px;
+  align-items: center;
+  min-height: 96px;
+  padding: 18px 22px;
+}
+
+.lesson-prompt-card > div {
+  display: grid;
+  gap: 6px;
+}
+
+.lesson-prompt-card.tall {
+  min-height: 150px;
+}
+
+.lesson-prompt-card > span {
+  color: #334855;
+  font-size: clamp(2rem, 8vw, 3rem);
+}
+
+.audio-square {
+  width: 52px;
+  height: 52px;
+  justify-self: end;
+}
+
+.big-audio-button {
+  width: 76px;
+  height: 76px;
+  justify-self: center;
+  font-size: 1.6rem;
+}
+
+.answer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.answer-card,
+.choice-answer {
+  min-height: 150px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: #334855;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.answer-card {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 18px;
+}
+
+.answer-card:active,
+.choice-answer:active,
+.word-chip:active {
+  transform: scale(0.985);
+}
+
+.choice-list {
+  display: grid;
+  gap: 16px;
+}
+
+.choice-answer {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  min-height: 88px;
+  padding: 18px 26px;
+  text-align: left;
+  font-size: clamp(1.4rem, 5vw, 2.1rem);
+}
+
+.choice-answer.stacked {
+  gap: 4px;
+}
+
+.choice-answer.stacked strong {
+  font-size: clamp(1.65rem, 6vw, 2.5rem);
+}
+
+.answer-card.selected,
+.choice-answer.selected,
+.word-chip.selected {
+  border-color: #129cef;
+  background: #eef8ff;
+}
+
+.answer-card.correct,
+.choice-answer.correct,
+.word-chip.correct {
+  border-color: #22c55e;
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.answer-card.wrong,
+.choice-answer.wrong,
+.word-chip.wrong {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.build-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-height: 82px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0 24px;
+}
+
+.build-slots span {
+  min-width: 74px;
+  min-height: 64px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: #334855;
+  font-size: 1.6rem;
+}
+
+.chip-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.lesson-writing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.lesson-canvas {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, transparent 49%, rgba(107, 130, 146, 0.16) 50%, transparent 51%),
+    linear-gradient(0deg, transparent 49%, rgba(107, 130, 146, 0.16) 50%, transparent 51%),
+    white;
+  touch-action: none;
+}
+
+.lesson-writing-side {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  padding: 16px;
+}
+
+.lesson-writing-side p {
+  color: var(--ink);
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.lesson-writing-side .recall-answer {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.recall-card {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.recall-card p {
+  color: var(--ink);
+  font-size: clamp(2rem, 8vw, 3rem);
+  font-weight: 850;
+}
+
+.recall-answer {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.recall-answer strong {
+  font-family: Georgia, "Noto Serif Devanagari", "Kohinoor Devanagari", serif;
+  font-size: clamp(2rem, 8vw, 3rem);
+}
+
+.recall-answer span {
+  color: var(--muted);
+  font-size: clamp(1.25rem, 5vw, 2rem);
+}
+
+.recall-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.recall-actions button.selected {
+  border-color: #129cef;
+  background: #eef8ff;
+  color: #0f6fa8;
+  box-shadow: 0 0 0 3px rgba(18, 156, 239, 0.16);
+}
+
+.recall-actions button.selected.success-button {
+  border-color: #22c55e;
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.recall-actions button.selected.danger-button {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.word-chip {
+  min-height: 58px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: #334855;
+  padding: 0 20px;
+  font-size: 1.45rem;
+}
+
+.lesson-feedback {
+  display: grid;
+  gap: 8px;
+  margin: 4px -18px 0;
+  padding: 22px 28px;
+  border-top: 2px solid transparent;
+}
+
+.lesson-feedback strong {
+  font-size: 1.9rem;
+  font-weight: 900;
+}
+
+.lesson-feedback span {
+  font-size: 1.15rem;
+  font-weight: 750;
+}
+
+.lesson-feedback.correct {
+  border-color: #22c55e;
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.lesson-feedback.wrong {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.lesson-feedback.neutral {
+  border-color: #f59e0b;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.lesson-continue {
+  position: sticky;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  min-height: 66px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--leaf);
+  color: white;
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+.lesson-continue:disabled {
+  background: #d6e0e7;
+  color: #8a949b;
+  cursor: not-allowed;
+}
+
+.lesson-complete {
+  display: grid;
+  gap: 14px;
+  min-height: 420px;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.lesson-complete p {
+  color: var(--muted);
+  font-size: 1.15rem;
+}
+
+.lesson-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: min(100%, 420px);
+}
+
+.lesson-summary-grid span {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  padding: 14px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.lesson-summary-grid strong {
+  color: var(--ink);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.lesson-kicker {
+  color: #ff9800 !important;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.segment {
+  min-height: 38px;
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.flashcard-stage {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 14px;
+}
+
+.letter-card,
+.word-card,
+.sentence-card {
+  position: relative;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 310px;
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(14, 165, 233, 0.11), transparent 45%),
+    linear-gradient(160deg, var(--white), #eff6ff);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.letter-card:active,
+.word-card:active,
+.sentence-card:active {
+  transform: scale(0.99);
+}
+
+.card-hint {
+  position: absolute;
+  top: 14px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.letter-symbol {
+  font-size: clamp(7rem, 28vw, 16rem);
+  line-height: 0.9;
+  font-family: Georgia, "Noto Serif Devanagari", "Kohinoor Devanagari", serif;
+}
+
+.letter-detail,
+.word-detail,
+.sentence-detail {
+  display: grid;
+  gap: 6px;
+  color: var(--leaf-dark);
+  font-size: clamp(1.1rem, 4vw, 2rem);
+  font-weight: 800;
+  text-align: center;
+}
+
+.word-detail em,
+.sentence-detail em {
+  color: var(--ink);
+  font-size: clamp(1rem, 3vw, 1.35rem);
+  font-style: normal;
+}
+
+.action-row,
+.word-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 0 18px;
+}
+
+.action-row.compact {
+  justify-content: flex-start;
+}
+
+.primary-button {
+  border-color: var(--leaf);
+  background: var(--leaf);
+  color: white;
+  font-weight: 800;
+}
+
+.secondary-button {
+  font-weight: 800;
+}
+
+.success-button {
+  border-color: rgba(15, 118, 110, 0.28);
+  background: #ecfdf5;
+  color: var(--leaf-dark);
+}
+
+.danger-button {
+  border-color: rgba(225, 29, 72, 0.22);
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.letter-grid,
+.word-list,
+.sentence-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+  gap: 8px;
+}
+
+.letter-chip,
+.word-item,
+.sentence-item {
+  min-height: 64px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--ink);
+}
+
+.letter-chip {
+  display: grid;
+  place-items: center;
+  font-family: Georgia, "Noto Serif Devanagari", "Kohinoor Devanagari", serif;
+  font-size: 2rem;
+}
+
+.letter-chip.known,
+.word-item.known,
+.sentence-item.known {
+  border-color: rgba(33, 113, 93, 0.45);
+  background: #ecfdf5;
+}
+
+.word-item.due,
+.sentence-item.due {
+  border-color: rgba(245, 158, 11, 0.48);
+}
+
+.drawing-layout,
+.speech-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.canvas-wrap {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(var(--sky) 1px, transparent 1px),
+    linear-gradient(90deg, var(--sky) 1px, transparent 1px),
+    var(--white);
+  background-size: 25% 25%;
+  box-shadow: var(--shadow);
+  aspect-ratio: 1;
+  touch-action: none;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.canvas-target {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(162, 59, 81, 0.28);
+  font-family: Georgia, "Noto Serif Devanagari", "Kohinoor Devanagari", serif;
+  font-size: min(58vw, 22rem);
+  pointer-events: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.practice-panel,
+.phrase-display,
+.recorder,
+.quiz-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  padding: 18px;
+}
+
+.big-letter {
+  color: var(--rose);
+  font-family: Georgia, "Noto Serif Devanagari", "Kohinoor Devanagari", serif;
+  font-size: clamp(5rem, 18vw, 11rem);
+  line-height: 0.92;
+}
+
+.score-meter {
+  overflow: hidden;
+  height: 12px;
+  margin: 22px 0 12px;
+  border-radius: 999px;
+  background: #eadfce;
+}
+
+.score-meter span {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--saffron), var(--leaf));
+  transition: width 220ms ease;
+}
+
+.score-copy,
+#drawingMeta,
+.phrase-roman,
+.phrase-german {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.word-trainer {
+  display: grid;
+  gap: 12px;
+}
+
+.word-card,
+.sentence-card {
+  min-height: 250px;
+}
+
+.word-symbol,
+.sentence-symbol {
+  text-align: center;
+  font-family: Georgia, "Noto Serif Devanagari", "Kohinoor Devanagari", serif;
+  font-size: clamp(3.6rem, 15vw, 8rem);
+  line-height: 1;
+}
+
+.sentence-symbol {
+  width: min(100%, 780px);
+  padding: 0 16px;
+  font-size: clamp(2.2rem, 9vw, 5rem);
+  line-height: 1.18;
+}
+
+.word-list,
+.sentence-list {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  margin-top: 16px;
+}
+
+.sentence-list {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.word-item,
+.sentence-item {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 12px;
+  text-align: left;
+}
+
+.word-item strong,
+.sentence-item strong {
+  font-family: Georgia, "Noto Serif Devanagari", "Kohinoor Devanagari", serif;
+  font-size: 1.4rem;
+}
+
+.sentence-item strong {
+  font-size: 1.18rem;
+  line-height: 1.25;
+}
+
+.word-item span,
+.sentence-item span,
+.word-item em,
+.sentence-item em {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.word-item em,
+.sentence-item em {
+  color: var(--blue);
+  font-style: normal;
+  font-weight: 800;
+}
+
+.sentence-trainer {
+  display: grid;
+  gap: 12px;
+}
+
+.phase-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.phase-pill {
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.srs-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.srs-meta span {
+  min-height: 32px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.quiz-panel {
+  margin-top: 14px;
+}
+
+.quiz-question {
+  margin-bottom: 12px;
+  font-weight: 850;
+}
+
+.quiz-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.quiz-option.correct {
+  border-color: var(--leaf);
+  background: #e9f3ea;
+}
+
+.quiz-option.wrong {
+  border-color: var(--rose);
+  background: #f8e6e9;
+}
+
+.phrase-display {
+  display: grid;
+  align-content: center;
+  min-height: 260px;
+}
+
+.phrase-nepali {
+  font-family: Georgia, "Noto Serif Devanagari", "Kohinoor Devanagari", serif;
+  font-size: clamp(3.2rem, 12vw, 7.2rem);
+  line-height: 1;
+}
+
+.phrase-roman {
+  margin-top: 12px;
+  font-size: 1.35rem;
+  font-weight: 850;
+}
+
+.phrase-german {
+  margin-top: 4px;
+}
+
+.recorder {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+audio {
+  width: 100%;
+}
+
+dialog {
+  width: min(420px, calc(100% - 28px));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+dialog::backdrop {
+  background: rgba(33, 29, 24, 0.28);
+}
+
+dialog p {
+  margin: 12px 0 18px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    padding-inline: 12px;
+  }
+
+  .progress-band {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .progress-band > div {
+    padding: 10px;
+  }
+
+  .tabs {
+    gap: 4px;
+  }
+
+  .tab {
+    flex: 0 0 92px;
+    padding-inline: 4px;
+    font-size: 0.72rem;
+  }
+
+  .section-heading {
+    display: grid;
+    align-items: start;
+  }
+
+  .segmented {
+    width: 100%;
+  }
+
+  .segment {
+    flex: 1;
+    padding-inline: 6px;
+  }
+
+  .flashcard-stage {
+    grid-template-columns: 38px minmax(0, 1fr) 38px;
+    gap: 6px;
+  }
+
+  .round-button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .letter-card,
+  .word-card,
+  .sentence-card {
+    min-height: 270px;
+  }
+
+  .drawing-layout,
+  .speech-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .word-controls {
+    display: grid;
+    grid-template-columns: 38px 1fr 1fr 1fr 38px;
+    align-items: center;
+  }
+
+  .word-controls .primary-button,
+  .word-controls .secondary-button {
+    padding-inline: 6px;
+    font-size: 0.76rem;
+  }
+
+  .phase-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sentence-list {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson-shell {
+    min-height: 520px;
+    gap: 12px;
+  }
+
+  .lesson-top {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .lesson-heading-row {
+    display: grid;
+  }
+
+  .roman-toggle {
+    justify-self: start;
+  }
+
+  .lesson-intro-card {
+    grid-template-columns: 1fr 58px;
+  }
+
+  .lesson-word-lines {
+    gap: 4px;
+    padding: 16px 20px;
+  }
+
+  .lesson-example-card {
+    grid-template-columns: 1fr 64px;
+    padding: 16px 0 16px 20px;
+  }
+
+  .audio-split {
+    width: 52px;
+    height: 58px;
+    margin-right: 12px;
+    border-width: 3px;
+  }
+
+  .lesson-prompt-card {
+    min-height: 100px;
+    padding: 16px 18px;
+  }
+
+  .lesson-prompt-card.tall {
+    min-height: 118px;
+  }
+
+  .answer-grid {
+    gap: 10px;
+  }
+
+  .answer-card {
+    min-height: 150px;
+    padding: 12px;
+  }
+
+  .choice-answer {
+    min-height: 80px;
+    padding: 15px 20px;
+  }
+
+  .lesson-writing {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson-writing-side {
+    padding: 14px;
+  }
+
+  .lesson-continue {
+    min-height: 58px;
+    font-size: 1.45rem;
+  }
+}

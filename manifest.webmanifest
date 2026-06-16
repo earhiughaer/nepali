@@ -1,0 +1,17 @@
+{
+  "name": "Nepali Lernen",
+  "short_name": "Nepali",
+  "description": "Private PWA zum Lernen von Nepali: Lektionen, Alphabet, Schreiben, Wörter, Sätze und Aussprache.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f7fafc",
+  "theme_color": "#f7fafc",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
