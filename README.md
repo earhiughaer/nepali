@@ -10,7 +10,7 @@ Private, statische PWA zum Lernen von Nepali auf iPhone und Desktop.
 - 70 A1-nahe Woerter mit Karteikarten, Kategorie und Phase
 - 30 einfache Saetze aus dem Grundwortschatz
 - Konsonanten werden im Uebungsmodus vor den Vokalen in traditioneller Reihenfolge eingefuehrt
-- Phase-6-aehnliches Wiederholungssystem mit faelligen Karten
+- Wiederholungssystem mit faelligen Karten
 - Fortschritt lokal im Browser ueber `localStorage`
 - Offline-Cache ueber Service Worker, sobald die App ueber eine gueltige Web-Origin laeuft
 
