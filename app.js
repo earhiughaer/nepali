@@ -61,6 +61,7 @@ const lessonLetters = [
 const phaseIntervals = content.phaseIntervals;
 const storeKey = "nepali-pwa-progress-v13";
 const lessonRomanKey = "nepali-pwa-lesson-roman-v3";
+const soundKey = "nepali-pwa-sound-v1";
 const legacyStoreKey = "nepali-pwa-progress-v1";
 const lessonRomanDefaults = {
   teachWord: true,
@@ -81,7 +82,7 @@ const lessonTypeLabels = {
   teachWord: "Neues Wort",
   teachSentence: "Neuer Satz",
   teachLetter: "Neuer Buchstabe",
-  letterRecognize: "Buchstabe wählen",
+  letterRecognize: "Wähle den richtigen Buchstaben",
   letterWrite: "Buchstabe schreiben",
   wordRecognize: "Wort wählen",
   wordListen: "Wort hören",
@@ -134,6 +135,7 @@ const state = {
   recordingChunks: [],
   drawingCompared: false,
   activeAudio: null,
+  soundEnabled: true,
   lessonRoman: { ...lessonRomanDefaults },
   lesson: {
     index: 0,
@@ -163,7 +165,8 @@ const els = {
   dueCount: $("#dueCount"),
   masteredCount: $("#masteredCount"),
   streakCount: $("#streakCount"),
-  lessonResetButton: $("#lessonResetButton"),
+  lessonExitButton: $("#lessonExitButton"),
+  lessonSoundButton: $("#lessonSoundButton"),
   lessonPathTitle: $("#lessonPathTitle"),
   lessonPathMeta: $("#lessonPathMeta"),
   homePhaseTabs: $("#homePhaseTabs"),
@@ -356,14 +359,25 @@ function loadLessonSettings() {
   } catch {
     localStorage.removeItem(lessonRomanKey);
   }
+  try {
+    const savedSound = localStorage.getItem(soundKey);
+    if (savedSound !== null) state.soundEnabled = savedSound === "true";
+  } catch {
+    localStorage.removeItem(soundKey);
+  }
 }
 
 function saveLessonSettings() {
   localStorage.setItem(lessonRomanKey, JSON.stringify(state.lessonRoman));
 }
 
+function saveSoundSetting() {
+  localStorage.setItem(soundKey, String(state.soundEnabled));
+}
+
 function setView(view) {
   state.view = view;
+  document.body.dataset.view = view;
   els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
   $$("[data-view]").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === view && button.classList.contains("home-card"));
@@ -376,6 +390,7 @@ function setView(view) {
     renderProgress();
     renderHomePhaseList();
   }
+  renderSoundButton();
 }
 
 function renderProgress() {
@@ -873,7 +888,7 @@ function renderLesson() {
     `;
     return;
   }
-  els.lessonPathTitle.textContent = step.type === "lessonComplete" ? "Auswertung" : lessonTypeLabels[step.type] || "Üben";
+  els.lessonPathTitle.textContent = lessonTitle(step);
   els.lessonPathMeta.textContent = step.item ? phaseLabel(step.kind, step.item) : "Schauen, was schon sitzt";
   state.lesson.selected = [];
   state.lesson.checked = false;
@@ -897,6 +912,27 @@ function renderLesson() {
 function phaseLabel(kind, item) {
   const card = ensureCard(kind, item);
   return `Stufe ${card.phase}`;
+}
+
+function lessonTitle(step) {
+  if (!step) return "Üben";
+  const titles = {
+    teachLetter: "Neuer Buchstabe",
+    letterRecognize: "Wähle den richtigen Buchstaben",
+    letterWrite: "Schreibe den Buchstaben",
+    teachWord: "Neues Wort",
+    wordRecognize: "Wähle die richtige Antwort",
+    wordWrite: "Schreibe die Zahl auf Nepali",
+    wordRecall: "Wie heißt das Wort auf Nepali?",
+    wordListen: "Was hast du gehört?",
+    teachSentence: "Neuer Satz",
+    sentenceMeaning: "Wähle die passende Bedeutung",
+    sentenceBuild: "Übersetze diesen Satz",
+    sentenceListen: "Was hast du gehört?",
+    sentenceRecall: "Erinnere dich an den Nepali-Satz",
+    lessonComplete: "Auswertung"
+  };
+  return titles[step.type] || lessonTypeLabels[step.type] || "Üben";
 }
 
 function lessonButtonText(step) {
@@ -979,7 +1015,6 @@ function renderTeachLetterStep(step) {
 function renderLetterRecognizeStep(step) {
   const options = optionSet(lessonLetters, step.item, "roman", 4);
   els.lessonStage.innerHTML = `
-    ${lessonHeadingMarkup(step, "Wähle den richtigen Buchstaben")}
     <div class="lesson-prompt-card">
       <span>${step.item.roman}</span>
       <button class="audio-square" data-audio-kind="letter" type="button" aria-label="Anhören">${audioIcon()}</button>
@@ -1560,6 +1595,7 @@ function renderCurrentPhrase() {
 }
 
 async function playItem(item, visible = false) {
+  if (!state.soundEnabled) return;
   if (state.activeAudio) {
     state.activeAudio.pause();
     state.activeAudio = null;
@@ -1579,6 +1615,36 @@ async function playItem(item, visible = false) {
     }
   }
   speak(item.nepali || item.char);
+}
+
+function renderSoundButton() {
+  if (!els.lessonSoundButton) return;
+  els.lessonSoundButton.textContent = state.soundEnabled ? "Ton an" : "Ton aus";
+  els.lessonSoundButton.setAttribute("aria-pressed", String(state.soundEnabled));
+}
+
+function toggleSound() {
+  state.soundEnabled = !state.soundEnabled;
+  if (!state.soundEnabled && state.activeAudio) {
+    state.activeAudio.pause();
+    state.activeAudio = null;
+  }
+  saveSoundSetting();
+  renderSoundButton();
+}
+
+function confirmExitLesson() {
+  if (!state.lesson.steps.length || window.confirm("Möchtest du die Lektion abbrechen?")) {
+    state.lesson = {
+      index: 0,
+      steps: [],
+      selected: [],
+      checked: false,
+      results: {},
+      evaluated: false
+    };
+    setView("home");
+  }
 }
 
 function speak(text) {
@@ -1722,7 +1788,8 @@ function bindEvents() {
     playItem(phrase, true);
   });
   els.recordButton.addEventListener("click", toggleRecording);
-  els.lessonResetButton.addEventListener("click", startLesson);
+  els.lessonExitButton.addEventListener("click", confirmExitLesson);
+  els.lessonSoundButton.addEventListener("click", toggleSound);
   els.lessonContinueButton.addEventListener("click", continueLesson);
 }
 
@@ -1749,6 +1816,7 @@ function init() {
   loadLessonSettings();
   initCards();
   bindEvents();
+  document.body.dataset.view = state.view;
   renderLetterGrid();
   renderDrawingSelect();
   renderWordList();
@@ -1760,6 +1828,7 @@ function init() {
   renderDrawingTarget();
   renderWord();
   renderSentence();
+  renderSoundButton();
   registerServiceWorker();
 }
 
