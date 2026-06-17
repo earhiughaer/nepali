@@ -66,7 +66,7 @@ const lessonRomanDefaults = {
   teachWord: true,
   teachSentence: true,
   teachLetter: true,
-  letterRecognize: true,
+  letterRecognize: false,
   letterWrite: true,
   wordRecognize: true,
   wordListen: false,
@@ -97,12 +97,7 @@ const feedbackCopy = {
     "Treffer. Du hast es erkannt!",
     "Stark, das war sauber!"
   ],
-  wrong: [
-    "Leider falsch! Schau dir die richtige Lösung kurz an!",
-    "Leider falsch! Das kommt gleich wieder dran!",
-    "Leider falsch! Kein Problem, genau dafür ist die Wiederholung da!",
-    "Leider falsch! Nimm dir die Lösung kurz mit!"
-  ],
+  wrong: [""],
   recallCorrect: [
     "Gut erinnert! Das bleibt für diese Runde sicher!",
     "Gut erinnert! Genau so soll es abrufbar sein!",
@@ -118,7 +113,8 @@ const feedbackCopy = {
 };
 
 const state = {
-  view: "lesson",
+  view: "home",
+  homePhase: 1,
   alphabetFilter: "all",
   wordFilter: "all",
   sentenceFilter: "all",
@@ -152,6 +148,7 @@ const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 const els = {
   tabs: $$(".tab"),
   views: {
+    home: $("#homeView"),
     lesson: $("#lessonView"),
     alphabet: $("#alphabetView"),
     drawing: $("#drawingView"),
@@ -165,6 +162,8 @@ const els = {
   lessonResetButton: $("#lessonResetButton"),
   lessonPathTitle: $("#lessonPathTitle"),
   lessonPathMeta: $("#lessonPathMeta"),
+  homePhaseTabs: $("#homePhaseTabs"),
+  homePhaseList: $("#homePhaseList"),
   lessonProgressBar: $("#lessonProgressBar"),
   lessonStage: $("#lessonStage"),
   lessonFeedback: $("#lessonFeedback"),
@@ -220,9 +219,7 @@ const els = {
   recordButton: $("#recordButton"),
   nativePlayback: $("#nativePlayback"),
   recordingPlayback: $("#recordingPlayback"),
-  recordingStatus: $("#recordingStatus"),
-  installHelpButton: $("#installHelpButton"),
-  installDialog: $("#installDialog")
+  recordingStatus: $("#recordingStatus")
 };
 
 const canvasContext = els.drawingCanvas.getContext("2d", { willReadFrequently: true });
@@ -361,19 +358,63 @@ function saveLessonSettings() {
 function setView(view) {
   state.view = view;
   els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
+  $$("[data-view]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.view === view && button.classList.contains("home-card"));
+  });
   Object.entries(els.views).forEach(([key, el]) => el.classList.toggle("active", key === view));
   if (view === "lesson" && !state.lesson.steps.length) {
     startLesson();
   }
+  if (view === "home") {
+    renderProgress();
+    renderHomePhaseList();
+  }
 }
 
 function renderProgress() {
-  const learning = allLearningItems();
-  const due = learning.filter(({ kind, item }) => isDue(ensureCard(kind, item))).length;
-  const mastered = learning.filter(({ kind, item }) => ensureCard(kind, item).phase >= 6).length;
+  const due = words.filter((item) => isDue(ensureCard("word", item))).length;
+  const mastered = words.filter((item) => ensureCard("word", item).phase >= 6).length;
   els.dueCount.textContent = due;
   els.masteredCount.textContent = mastered;
   els.streakCount.textContent = state.streak;
+  renderHomePhaseList();
+}
+
+function renderHomePhaseList() {
+  if (!els.homePhaseTabs || !els.homePhaseList) return;
+  els.homePhaseTabs.innerHTML = "";
+  for (let phase = 1; phase <= 6; phase += 1) {
+    const count = words.filter((item) => ensureCard("word", item).phase === phase).length;
+    const button = document.createElement("button");
+    button.className = "home-phase-button";
+    button.classList.toggle("active", state.homePhase === phase);
+    button.type = "button";
+    button.textContent = `Stufe ${phase}`;
+    button.setAttribute("aria-label", `Stufe ${phase}, ${count} Wörter`);
+    button.addEventListener("click", () => {
+      state.homePhase = phase;
+      renderHomePhaseList();
+    });
+    const badge = document.createElement("span");
+    badge.textContent = count;
+    button.append(badge);
+    els.homePhaseTabs.append(button);
+  }
+
+  const phaseWords = words.filter((item) => ensureCard("word", item).phase === state.homePhase);
+  els.homePhaseList.innerHTML = phaseWords.length
+    ? phaseWords.map((item) => {
+        const card = ensureCard("word", item);
+        return `
+          <article class="home-phase-word">
+            <strong>${item.nepali}</strong>
+            <span>${item.roman}</span>
+            <em>${item.german}</em>
+            <small>${dueLabel(card.nextDue)}</small>
+          </article>
+        `;
+      }).join("")
+    : `<p class="empty-phase">In Stufe ${state.homePhase} sind gerade keine Wörter.</p>`;
 }
 
 function renderPhaseStrip(kind) {
@@ -384,7 +425,7 @@ function renderPhaseStrip(kind) {
     const count = items.filter((item) => ensureCard(kind, item).phase === phase).length;
     const pill = document.createElement("span");
     pill.className = "phase-pill";
-    pill.textContent = `Phase ${phase}: ${count}`;
+    pill.textContent = `Stufe ${phase}: ${count}`;
     host.append(pill);
   }
 }
@@ -542,7 +583,7 @@ function renderWord() {
   els.wordSymbol.textContent = item.nepali;
   els.wordDetail.innerHTML = state.wordFlipped ? `<span>${item.roman}</span><em>${item.german}</em>` : " ";
   els.wordCategory.textContent = item.category;
-  els.wordPhase.textContent = `Phase ${card.phase}`;
+  els.wordPhase.textContent = `Stufe ${card.phase}`;
   els.wordDue.textContent = dueLabel(card.nextDue);
   renderPhaseStrip("word");
   renderProgress();
@@ -555,7 +596,7 @@ function renderSentence() {
   els.sentenceSymbol.textContent = item.nepali;
   els.sentenceDetail.innerHTML = state.sentenceFlipped ? `<span>${item.roman}</span><em>${item.german}</em>` : " ";
   els.sentenceCategory.textContent = item.category;
-  els.sentencePhase.textContent = `Phase ${card.phase}`;
+  els.sentencePhase.textContent = `Stufe ${card.phase}`;
   els.sentenceDue.textContent = dueLabel(card.nextDue);
   renderPhaseStrip("sentence");
   renderProgress();
@@ -614,7 +655,7 @@ function cardListMarkup(kind, item) {
     <strong>${item.nepali}</strong>
     <span>${item.roman}</span>
     <span>${item.german}</span>
-    <em>Phase ${card.phase} · ${dueLabel(card.nextDue)}</em>
+    <em>Stufe ${card.phase} · ${dueLabel(card.nextDue)}</em>
   `;
 }
 
@@ -626,7 +667,7 @@ function updateListStates(kind) {
     button.classList.toggle("known", card.phase >= 6);
     button.classList.toggle("due", isDue(card));
     const em = button.querySelector("em");
-    if (em) em.textContent = `Phase ${card.phase} · ${dueLabel(card.nextDue)}`;
+    if (em) em.textContent = `Stufe ${card.phase} · ${dueLabel(card.nextDue)}`;
   });
 }
 
@@ -649,7 +690,7 @@ function reviewItem(kind, item, correct) {
     card.correct += 1;
     state.streak += 1;
   } else {
-    card.phase = 1;
+    card.phase = Math.max(1, card.phase - 2);
     card.wrong += 1;
     state.streak = 0;
   }
@@ -659,6 +700,7 @@ function reviewItem(kind, item, correct) {
   renderProgress();
   renderPhaseStrip("word");
   renderPhaseStrip("sentence");
+  renderHomePhaseList();
   updateListStates("word");
   updateListStates("sentence");
 }
@@ -787,7 +829,7 @@ function renderLesson() {
     `;
     return;
   }
-  els.lessonPathTitle.textContent = step.kind === "letter" ? "Buchstaben und Schreiben" : step.kind === "sentence" ? "Gemischtes Satztraining" : step.kind === "word" ? "Gemischtes Worttraining" : "Auswertung";
+  els.lessonPathTitle.textContent = step.type === "lessonComplete" ? "Auswertung" : lessonTypeLabels[step.type] || "Üben";
   els.lessonPathMeta.textContent = step.item ? phaseLabel(step.kind, step.item) : "Schauen, was schon sitzt";
   state.lesson.selected = [];
   state.lesson.checked = false;
@@ -809,12 +851,12 @@ function renderLesson() {
 
 function phaseLabel(kind, item) {
   const card = ensureCard(kind, item);
-  return `Phase ${card.phase}`;
+  return `Stufe ${card.phase}`;
 }
 
 function lessonButtonText(step) {
   if (isTeachingStep(step)) return "Weiter";
-  if (step.type === "lessonComplete") return state.lesson.evaluated ? "Neue Übung" : "Phasen aktualisieren";
+  if (step.type === "lessonComplete") return state.lesson.evaluated ? "Neue Übung" : "Stufen aktualisieren";
   return "Überprüfen";
 }
 
@@ -826,9 +868,11 @@ function lessonHeadingMarkup(step, title) {
   return `
     <div class="lesson-heading-row">
       <h2>${title}</h2>
-      <button class="roman-toggle" data-roman-toggle="${step.type}" type="button" aria-pressed="${shouldShowRoman(step)}">
-        ${lessonTypeLabels[step.type] || "Diese Aufgabe"}: Lautschrift ${shouldShowRoman(step) ? "an" : "aus"}
-      </button>
+      ${canToggleRoman(step) ? `
+        <button class="roman-toggle" data-roman-toggle="${step.type}" type="button" aria-pressed="${shouldShowRoman(step)}">
+          ${lessonTypeLabels[step.type] || "Diese Aufgabe"}: Lautschrift ${shouldShowRoman(step) ? "an" : "aus"}
+        </button>
+      ` : ""}
     </div>
   `;
 }
@@ -844,11 +888,26 @@ function bindRomanToggle(step) {
 }
 
 function shouldShowRoman(step) {
+  if (step.type === "letterRecognize") return false;
   return state.lessonRoman[step.type] !== false;
+}
+
+function canToggleRoman(step) {
+  return step.type !== "letterRecognize";
 }
 
 function romanLine(item, step) {
   return shouldShowRoman(step) ? `<span class="roman-line">${item.roman}</span>` : "";
+}
+
+function audioIcon() {
+  return `
+    <svg class="audio-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 9.5v5h3.3L12 18.2V5.8L7.3 9.5H4z"></path>
+      <path d="M16 8.5a5 5 0 0 1 0 7"></path>
+      <path d="M18.7 5.8a8.8 8.8 0 0 1 0 12.4"></path>
+    </svg>
+  `;
 }
 
 function renderTeachLetterStep(step) {
@@ -860,7 +919,7 @@ function renderTeachLetterStep(step) {
         ${romanLine(step.item, step)}
         <em>${step.item.sound}</em>
       </div>
-      <button class="audio-split" data-audio-kind="letter" type="button" aria-label="Buchstabe anhören">🔊</button>
+      <button class="audio-split" data-audio-kind="letter" type="button" aria-label="Buchstabe anhören">${audioIcon()}</button>
     </div>
   `;
   bindLessonAudio(step.item, null);
@@ -873,7 +932,7 @@ function renderLetterRecognizeStep(step) {
     ${lessonHeadingMarkup(step, "Wähle den richtigen Buchstaben")}
     <div class="lesson-prompt-card">
       <span>${step.item.roman}</span>
-      <button class="audio-square" data-audio-kind="letter" type="button" aria-label="Anhören">🔊</button>
+      <button class="audio-square" data-audio-kind="letter" type="button" aria-label="Anhören">${audioIcon()}</button>
     </div>
     <div class="answer-grid letter-answer-grid">
       ${options.map((item) => `
@@ -895,7 +954,7 @@ function renderLetterWriteStep(step) {
       <canvas class="lesson-canvas" id="lessonWritingCanvas" width="520" height="520" aria-label="Buchstaben zeichnen"></canvas>
       <div class="lesson-writing-side">
         <p>Zeichne <strong>${step.item.roman}</strong> aus dem Gedächtnis.</p>
-        <button class="secondary-button" id="lessonShowLetterButton">Vorlage zeigen</button>
+        <button class="secondary-button" id="lessonShowLetterButton">Buchstabe anzeigen</button>
         <button class="secondary-button" id="lessonClearCanvasButton">Löschen</button>
         <div class="recall-answer hidden" id="lessonLetterAnswer">
           <strong>${step.item.char}</strong>
@@ -926,7 +985,7 @@ function renderTeachWordStep(step) {
         ${romanLine(step.item, step)}
         <em>${step.item.german}</em>
       </div>
-      <button class="audio-split" data-audio-kind="word" type="button" aria-label="Wort anhören">🔊</button>
+      <button class="audio-split" data-audio-kind="word" type="button" aria-label="Wort anhören">${audioIcon()}</button>
     </div>
   `;
   bindLessonAudio(step.item, null);
@@ -942,7 +1001,7 @@ function renderTeachSentenceStep(step) {
         ${romanLine(step.item, step)}
         <em>${step.item.german}</em>
       </div>
-      <button class="audio-split" data-audio-kind="sentence" type="button" aria-label="Satz anhören">🔊</button>
+      <button class="audio-split" data-audio-kind="sentence" type="button" aria-label="Satz anhören">${audioIcon()}</button>
     </div>
   `;
   bindLessonAudio(null, step.item);
@@ -955,7 +1014,7 @@ function renderWordRecognizeStep(step) {
     ${lessonHeadingMarkup(step, "Wähle die richtige Antwort")}
     <div class="lesson-prompt-card">
       <span>${step.item.german}</span>
-      <button class="audio-square" data-audio-kind="word" type="button" aria-label="Anhören">🔊</button>
+      <button class="audio-square" data-audio-kind="word" type="button" aria-label="Anhören">${audioIcon()}</button>
     </div>
     <div class="answer-grid">
       ${options.map((item) => optionButtonMarkup(item, item.id === step.item.id, step)).join("")}
@@ -975,7 +1034,7 @@ function renderSentenceMeaningStep(step) {
         <strong>${step.item.nepali}</strong>
         ${romanLine(step.item, step)}
       </div>
-      <button class="audio-square" data-audio-kind="sentence" type="button" aria-label="Anhören">🔊</button>
+      <button class="audio-square" data-audio-kind="sentence" type="button" aria-label="Anhören">${audioIcon()}</button>
     </div>
     <div class="choice-list">
       ${options.map((item) => `<button class="choice-answer" data-correct="${item.id === step.item.id}">${item.german}</button>`).join("")}
@@ -990,7 +1049,7 @@ function renderListenStep(step) {
   const options = optionSet(items, step.item, "roman", 4);
   els.lessonStage.innerHTML = `
     ${lessonHeadingMarkup(step, "Was hast du gehört?")}
-    <button class="big-audio-button" data-audio-kind="${step.kind}" type="button" aria-label="Anhören">🔊</button>
+    <button class="big-audio-button" data-audio-kind="${step.kind}" type="button" aria-label="Anhören">${audioIcon()}</button>
     <div class="choice-list">
       ${options.map((item) => `
         <button class="choice-answer stacked" data-correct="${item.id === step.item.id}">
@@ -1022,7 +1081,7 @@ function renderBuildSentenceStep(step) {
         <strong>${step.item.nepali}</strong>
         ${romanLine(step.item, step)}
       </div>
-      <button class="audio-square" data-audio-kind="sentence" type="button" aria-label="Anhören">🔊</button>
+      <button class="audio-square" data-audio-kind="sentence" type="button" aria-label="Anhören">${audioIcon()}</button>
     </div>
     <div class="build-slots" id="buildSlots">${correctWords.map(() => "<span></span>").join("")}</div>
     <div class="chip-bank">
@@ -1241,7 +1300,7 @@ function checkLessonAnswer(step) {
     showLessonFeedback("correct", "Richtig!", randomCopy("correct"));
     state.streak += 1;
   } else {
-    showLessonFeedback("wrong", "Leider falsch", `${randomCopy("wrong")}<br>${correctAnswerText(step)}`);
+    showLessonFeedback("wrong", "Leider falsch", correctAnswerText(step));
     state.streak = 0;
   }
   saveProgress();
@@ -1249,10 +1308,11 @@ function checkLessonAnswer(step) {
   markLessonAnswers(correct);
   els.lessonContinueButton.disabled = false;
   els.lessonContinueButton.textContent = "Weiter";
+  els.lessonFeedback.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
 function playAnswerAfterCheckIfNeeded(step) {
-  if (step.type === "sentenceMeaning") {
+  if (step.type === "sentenceMeaning" || step.type === "sentenceBuild") {
     playItem(step.item);
     return;
   }
@@ -1275,7 +1335,7 @@ function recordLessonResult(step, correct) {
 
 function renderLessonCompleteStep() {
   const summary = lessonRunSummary();
-  els.lessonContinueButton.textContent = state.lesson.evaluated ? "Neue Übung" : "Phasen aktualisieren";
+  els.lessonContinueButton.textContent = state.lesson.evaluated ? "Neue Übung" : "Stufen aktualisieren";
   els.lessonStage.innerHTML = `
     <div class="lesson-complete">
       <p class="lesson-kicker">${state.lesson.evaluated ? "Bewertet" : "Auswertung"}</p>
@@ -1338,12 +1398,12 @@ function showLessonFeedback(status, title, text) {
 
 function correctAnswerText(step) {
   if (step.type === "sentenceBuild" || step.type === "sentenceMeaning" || step.type === "sentenceListen") {
-    return `Richtige Antwort: ${step.item.german}`;
+    return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-text">${step.item.german}</span>`;
   }
   if (step.kind === "letter") {
-    return `Richtige Antwort:<br>${step.item.char}<br>${step.item.roman}`;
+    return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-devanagari">${step.item.char}</span><span class="correct-answer-roman">${step.item.roman}</span>`;
   }
-  return `Richtige Antwort:<br>${step.item.nepali}<br>${step.item.roman}`;
+  return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-devanagari">${step.item.nepali}</span><span class="correct-answer-roman">${step.item.roman}</span>`;
 }
 
 function markLessonAnswers(correct) {
@@ -1487,6 +1547,9 @@ async function toggleRecording() {
 
 function bindEvents() {
   els.tabs.forEach((tab) => tab.addEventListener("click", () => setView(tab.dataset.view)));
+  $$("[data-view]").forEach((button) => {
+    button.addEventListener("click", () => setView(button.dataset.view));
+  });
   $$(".segment[data-alphabet-filter]").forEach((button) => {
     button.addEventListener("click", () => {
       state.alphabetFilter = button.dataset.alphabetFilter;
@@ -1576,7 +1639,6 @@ function bindEvents() {
   els.recordButton.addEventListener("click", toggleRecording);
   els.lessonResetButton.addEventListener("click", startLesson);
   els.lessonContinueButton.addEventListener("click", continueLesson);
-  els.installHelpButton.addEventListener("click", () => els.installDialog.showModal());
 }
 
 function toggleSet(set, value) {
@@ -1608,11 +1670,11 @@ function init() {
   renderSentenceList();
   renderPhrases();
   renderProgress();
+  renderHomePhaseList();
   renderLetter();
   renderDrawingTarget();
   renderWord();
   renderSentence();
-  startLesson();
   registerServiceWorker();
 }
 

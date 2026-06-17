@@ -4,10 +4,11 @@ Private, statische PWA zum Lernen von Nepali auf iPhone und Desktop.
 
 ## Funktionen
 
-- Gefuehrter Uebungsmodus als Hauptweg mit Buchstaben, Schreibaufgaben, Zahlen, Woertern und Saetzen
+- Hauptmenue mit Ueben, Alphabet, Schreiben, Tageswerten und Wortuebersicht nach Stufe
+- Gefuehrter Uebungsmodus mit Buchstaben, Schreibaufgaben, Zahlen, Woertern und Saetzen
 - Alphabet-Karteikarten fuer Devanagari-Zeichen als manueller Zusatzbereich
 - Zeichenmodus: erst schreiben, dann mit Vorlage und grobem Aehnlichkeitswert vergleichen als manueller Zusatzbereich
-- 70 A1-nahe Woerter mit Karteikarten, Kategorie und Phase
+- 70 A1-nahe Woerter mit Karteikarten, Kategorie und Stufe
 - 30 einfache Saetze aus dem Grundwortschatz
 - Konsonanten werden im Uebungsmodus vor den Vokalen in traditioneller Reihenfolge eingefuehrt
 - Wiederholungssystem mit faelligen Karten
@@ -16,7 +17,7 @@ Private, statische PWA zum Lernen von Nepali auf iPhone und Desktop.
 
 ## Wiederholungssystem
 
-Buchstaben, Woerter und Saetze starten in Phase 1. Im gefuehrten Uebungsmodus wird am Ende einer Runde geschaut, was schon sicher sitzt und was nochmal geuebt werden sollte. Ein Lerninhalt kommt nur weiter, wenn alle dazu passenden Aufgaben in dieser Runde richtig waren. Bei einem Fehler kommt genau dieser Inhalt wieder.
+Buchstaben, Woerter und Saetze starten in Stufe 1. Im gefuehrten Uebungsmodus wird am Ende einer Runde geschaut, was schon sicher sitzt und was nochmal geuebt werden sollte. Ein Lerninhalt kommt nur weiter, wenn alle dazu passenden Aufgaben in dieser Runde richtig waren. Bei einem Fehler faellt dieser Inhalt um zwei Stufen zurueck, aber nie unter Stufe 1.
 
 Der Lernweg ist bewusst gestuft:
 
@@ -29,10 +30,10 @@ Der Lernweg ist bewusst gestuft:
 Die Intervalle sind in [content.js](content.js) definiert:
 
 ```js
-[0, 1, 3, 7, 16, 35]
+[0, 1, 4, 9, 18, 40]
 ```
 
-Das bedeutet: Phase 1 ist sofort faellig, Phase 2 morgen, dann nach 3, 7, 16 und 35 Tagen. Die Daten bleiben lokal auf dem Geraet.
+Das bedeutet: Stufe 1 ist sofort faellig, Stufe 2 morgen, dann nach 4, 9, 18 und 40 Tagen. Die Daten bleiben lokal auf dem Geraet.
 
 ## Lokal testen
 

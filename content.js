@@ -1,5 +1,5 @@
 window.NEPALI_CONTENT = {
-  phaseIntervals: [0, 1, 3, 7, 16, 35],
+  phaseIntervals: [0, 1, 4, 9, 18, 40],
   words: [
     { id: "namaste", nepali: "नमस्ते", roman: "namaste", german: "Hallo", category: "Begrüßung" },
     { id: "dhanyabad", nepali: "धन्यवाद", roman: "dhanyabad", german: "Danke", category: "Begrüßung" },

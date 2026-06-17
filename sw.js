@@ -1,13 +1,13 @@
-const cacheName = "nepali-pwa-v17";
-const runtimeCacheName = "nepali-pwa-runtime-v17";
+const cacheName = "nepali-pwa-v20";
+const runtimeCacheName = "nepali-pwa-runtime-v20";
 const assets = [
   ".",
   "index.html",
-  "styles.css?v=17",
-  "content.js?v=17",
-  "app.js?v=17",
+  "styles.css?v=20",
+  "content.js?v=20",
+  "app.js?v=20",
   "manifest.webmanifest",
-  "icons/icon.svg"
+  "icons/icon.png"
 ];
 
 self.addEventListener("install", (event) => {

@@ -9,51 +9,79 @@
     <meta name="apple-mobile-web-app-title" content="Nepali">
     <title>Nepali Lernen</title>
     <link rel="manifest" href="manifest.webmanifest">
-    <link rel="apple-touch-icon" href="icons/icon.svg">
-    <link rel="stylesheet" href="styles.css?v=17">
+    <link rel="apple-touch-icon" href="icons/icon.png">
+    <link rel="stylesheet" href="styles.css?v=20">
   </head>
   <body>
     <div class="app-shell">
+      <div class="prayer-flags" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
       <header class="topbar">
+        <button class="app-brand" data-view="home" type="button" aria-label="Zum Hauptmenü">
+          <img src="icons/icon.png" alt="" aria-hidden="true">
+        </button>
         <div>
           <p class="eyebrow">नेपाली</p>
           <h1>Nepali Lernen</h1>
         </div>
-        <button class="icon-button" id="installHelpButton" aria-label="Installationshinweise anzeigen" title="Installieren">
-          <span aria-hidden="true">⌂</span>
-        </button>
       </header>
 
       <main>
-        <section class="progress-band" aria-label="Lernfortschritt">
-          <div>
-            <span class="metric" id="dueCount">0</span>
-            <span class="metric-label">heute fällig</span>
+        <section class="view active" id="homeView">
+          <div class="home-hero">
+            <div>
+              <p class="eyebrow">Hauptmenü</p>
+              <h2>Was möchtest du üben?</h2>
+            </div>
+            <section class="progress-band" aria-label="Lernfortschritt">
+              <div>
+                <span class="metric" id="dueCount">0</span>
+                <span class="metric-label">heute fällig</span>
+              </div>
+              <div>
+                <span class="metric" id="masteredCount">0</span>
+                <span class="metric-label">gemeistert</span>
+              </div>
+              <div>
+                <span class="metric" id="streakCount">0</span>
+                <span class="metric-label">Quiz-Serie</span>
+              </div>
+            </section>
           </div>
-          <div>
-            <span class="metric" id="masteredCount">0</span>
-            <span class="metric-label">Phase 6</span>
+
+          <div class="home-actions" aria-label="Lernbereiche">
+            <button class="home-card primary-home-card" data-view="lesson" type="button">
+              <strong>Üben</strong>
+              <span>Gemischter Lauf mit Stufen</span>
+            </button>
+            <button class="home-card" data-view="alphabet" type="button">
+              <strong>Alphabet</strong>
+              <span>Karten manuell ansehen</span>
+            </button>
+            <button class="home-card" data-view="drawing" type="button">
+              <strong>Schreiben</strong>
+              <span>Zeichen frei trainieren</span>
+            </button>
           </div>
-          <div>
-            <span class="metric" id="streakCount">0</span>
-            <span class="metric-label">Quiz-Serie</span>
-          </div>
+
+          <section class="home-phase-panel" aria-labelledby="homePhaseHeading">
+            <div class="section-heading compact-heading">
+              <div>
+                <p class="eyebrow">Wortschatz</p>
+                <h2 id="homePhaseHeading">Wörter nach Stufe</h2>
+              </div>
+            </div>
+            <div class="home-phase-tabs" id="homePhaseTabs" aria-label="Stufen auswählen"></div>
+            <div class="home-phase-list" id="homePhaseList" aria-live="polite"></div>
+          </section>
         </section>
 
-        <nav class="tabs" aria-label="Lernbereiche">
-          <button class="tab active" data-view="lesson">Üben</button>
-          <button class="tab" data-view="alphabet">Alphabet</button>
-          <button class="tab" data-view="drawing">Schreiben</button>
-        </nav>
-
-        <section class="view active" id="lessonView">
-          <div class="lesson-shell">
-            <div class="lesson-top">
-              <div>
-                <p class="eyebrow">Lernweg</p>
-                <h2 id="lessonPathTitle">Geführtes Üben</h2>
-              </div>
-              <span id="lessonPathMeta">Buchstaben, Wörter und Sätze gemischt</span>
+        <section class="view" id="lessonView">
+            <div class="lesson-shell">
+              <div class="lesson-mini-top">
+              <span id="lessonPathTitle">Üben</span>
+              <span id="lessonPathMeta">Stufe 1</span>
               <button class="secondary-button" id="lessonResetButton">Neu</button>
             </div>
             <div class="lesson-progress" aria-label="Übungsfortschritt">
@@ -125,7 +153,7 @@
           <div class="section-heading">
             <div>
               <p class="eyebrow">A1 Grundwortschatz</p>
-              <h2>Wörter mit Phasen lernen</h2>
+              <h2>Wörter mit Stufen lernen</h2>
             </div>
             <div class="segmented" role="group" aria-label="Wortfilter">
               <button class="segment active" data-word-filter="all">Alle</button>
@@ -133,7 +161,7 @@
               <button class="segment" data-word-filter="new">Neu</button>
             </div>
           </div>
-          <div class="phase-strip" id="wordPhaseStrip" aria-label="Wortphasen"></div>
+          <div class="phase-strip" id="wordPhaseStrip" aria-label="Wortstufen"></div>
           <div class="word-trainer">
             <button class="word-card" id="wordCard" aria-label="Wortkarte umdrehen">
               <span class="card-hint">Tippen zum Umdrehen</span>
@@ -142,7 +170,7 @@
             </button>
             <div class="srs-meta">
               <span id="wordCategory">Begrüßung</span>
-              <span id="wordPhase">Phase 1</span>
+              <span id="wordPhase">Stufe 1</span>
               <span id="wordDue">heute</span>
             </div>
             <div class="word-controls">
@@ -168,7 +196,7 @@
               <button class="segment" data-sentence-filter="new">Neu</button>
             </div>
           </div>
-          <div class="phase-strip" id="sentencePhaseStrip" aria-label="Satzphasen"></div>
+          <div class="phase-strip" id="sentencePhaseStrip" aria-label="Satzstufen"></div>
           <div class="sentence-trainer">
             <button class="sentence-card" id="sentenceCard" aria-label="Satzkarte umdrehen">
               <span class="card-hint">Tippen zum Umdrehen</span>
@@ -177,7 +205,7 @@
             </button>
             <div class="srs-meta">
               <span id="sentenceCategory">Vorstellen</span>
-              <span id="sentencePhase">Phase 1</span>
+              <span id="sentencePhase">Stufe 1</span>
               <span id="sentenceDue">heute</span>
             </div>
             <div class="word-controls">
@@ -217,15 +245,7 @@
       </main>
     </div>
 
-    <dialog id="installDialog">
-      <form method="dialog">
-        <h2>Auf dem iPhone nutzen</h2>
-        <p>Öffne diese App in Safari, tippe auf Teilen und dann auf „Zum Home-Bildschirm“. Für Offline-Funktion und echtes PWA-Verhalten sollte sie über HTTPS bereitgestellt werden, z. B. per GitHub Pages, Netlify oder Cloudflare Pages.</p>
-        <button class="primary-button">OK</button>
-      </form>
-    </dialog>
-
-    <script src="content.js?v=17" defer></script>
-    <script src="app.js?v=17" defer></script>
+    <script src="content.js?v=20" defer></script>
+    <script src="app.js?v=20" defer></script>
   </body>
 </html>

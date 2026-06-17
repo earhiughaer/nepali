@@ -1,6 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#f7f2e7"/>
-  <path d="M96 124h320v42H96z" fill="#21715d"/>
-  <text x="256" y="334" text-anchor="middle" font-family="Georgia, serif" font-size="224" font-weight="700" fill="#a23b51">ने</text>
-  <circle cx="388" cy="388" r="42" fill="#d88b24"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title>Nepali Rhino App Icon</title>
+  <defs>
+    <linearGradient id="bg" x1="84" y1="42" x2="424" y2="476" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e0f7fa"/>
+      <stop offset="0.52" stop-color="#d1fae5"/>
+      <stop offset="1" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="128" y1="155" x2="385" y2="386" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#526b78"/>
+      <stop offset="1" stop-color="#263f4b"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path d="M83 150c76-42 171-55 288-31 28 6 51 15 67 27" fill="none" stroke="#64748b" stroke-width="8" stroke-linecap="round" opacity="0.22"/>
+  <g opacity="0.92">
+    <path d="M127 149h46l-4 56h-34z" fill="#38bdf8" transform="rotate(-8 150 177)"/>
+    <path d="M208 124h46l-5 58h-33z" fill="#f97316" transform="rotate(6 231 153)"/>
+    <path d="M291 124h46l-5 58h-33z" fill="#22c55e" transform="rotate(-5 314 153)"/>
+    <path d="M371 144h46l-5 56h-33z" fill="#ef4444" transform="rotate(7 394 172)"/>
+  </g>
+  <g filter="url(#shadow)">
+    <path d="M118 309c0-77 61-139 145-139 61 0 117 33 145 83 23 4 39 25 34 48-5 26-31 43-58 36-29 39-76 62-127 62-78 0-139-37-139-90z" fill="url(#skin)"/>
+    <path d="M159 249c-16-46 8-89 53-102 6 40-9 76-53 102z" fill="#526b78"/>
+    <path d="M395 249c22-6 44 7 50 30 7 29-14 52-43 53 11-24 10-54-7-83z" fill="#263f4b"/>
+    <path d="M394 246c18-18 43-26 70-20-12 31-34 51-65 59z" fill="#f8fafc"/>
+    <path d="M420 239c10-7 22-10 36-9-8 14-19 23-34 28z" fill="#dbeafe"/>
+    <circle cx="346" cy="256" r="13" fill="#f8fafc"/>
+    <circle cx="351" cy="259" r="6" fill="#172033"/>
+    <path d="M202 329c37 20 87 22 130 2" fill="none" stroke="#9fb5bf" stroke-width="14" stroke-linecap="round" opacity="0.5"/>
+    <path d="M169 296c-21 4-42-7-52-27 24-8 51-1 68 18z" fill="#344d5a"/>
+    <path d="M206 387l-24 42h48l18-35zM318 389l26 40h48l-36-57z" fill="#263f4b"/>
+  </g>
+  <path d="M137 405c63 24 174 26 239 0" fill="none" stroke="#0f766e" stroke-width="14" stroke-linecap="round" opacity="0.42"/>
 </svg>
