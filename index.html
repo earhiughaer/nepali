@@ -10,7 +10,7 @@
     <title>Nepali Lernen</title>
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="icons/icon.png">
-    <link rel="stylesheet" href="styles.css?v=20">
+    <link rel="stylesheet" href="styles.css?v=21">
   </head>
   <body>
     <div class="app-shell">
@@ -45,7 +45,7 @@
               </div>
               <div>
                 <span class="metric" id="streakCount">0</span>
-                <span class="metric-label">Quiz-Serie</span>
+                <span class="metric-label">Tages-Serie</span>
               </div>
             </section>
           </div>
@@ -63,14 +63,21 @@
               <strong>Schreiben</strong>
               <span>Zeichen frei trainieren</span>
             </button>
+            <button class="home-card" data-view="phases" type="button">
+              <strong>Stufen</strong>
+              <span>Wörter je Stufe ansehen</span>
+            </button>
           </div>
+        </section>
 
+        <section class="view" id="phasesView">
           <section class="home-phase-panel" aria-labelledby="homePhaseHeading">
             <div class="section-heading compact-heading">
               <div>
                 <p class="eyebrow">Wortschatz</p>
                 <h2 id="homePhaseHeading">Wörter nach Stufe</h2>
               </div>
+              <button class="secondary-button" data-view="home" type="button">Zurück</button>
             </div>
             <div class="home-phase-tabs" id="homePhaseTabs" aria-label="Stufen auswählen"></div>
             <div class="home-phase-list" id="homePhaseList" aria-live="polite"></div>
@@ -245,7 +252,7 @@
       </main>
     </div>
 
-    <script src="content.js?v=20" defer></script>
-    <script src="app.js?v=20" defer></script>
+    <script src="content.js?v=21" defer></script>
+    <script src="app.js?v=21" defer></script>
   </body>
 </html>

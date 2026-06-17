@@ -515,7 +515,7 @@ select {
 
 .lesson-canvas {
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 1.15;
   border: 1px solid var(--line);
   border-radius: 8px;
   background:
@@ -1327,6 +1327,13 @@ dialog p {
 
   .lesson-writing {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .lesson-canvas {
+    width: min(100%, 300px);
+    max-height: 240px;
+    justify-self: center;
   }
 
   .lesson-writing-side {
@@ -1446,7 +1453,7 @@ main {
 
 .home-actions {
   display: grid;
-  grid-template-columns: 1.35fr 1fr 1fr;
+  grid-template-columns: 1.25fr repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin: 20px 0;
 }

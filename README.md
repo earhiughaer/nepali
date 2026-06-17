@@ -6,6 +6,7 @@ Private, statische PWA zum Lernen von Nepali auf iPhone und Desktop.
 
 - Hauptmenue mit Ueben, Alphabet, Schreiben, Tageswerten und Wortuebersicht nach Stufe
 - Gefuehrter Uebungsmodus mit Buchstaben, Schreibaufgaben, Zahlen, Woertern und Saetzen
+- Eigene Stufenseite fuer die Wortuebersicht
 - Alphabet-Karteikarten fuer Devanagari-Zeichen als manueller Zusatzbereich
 - Zeichenmodus: erst schreiben, dann mit Vorlage und grobem Aehnlichkeitswert vergleichen als manueller Zusatzbereich
 - 70 A1-nahe Woerter mit Karteikarten, Kategorie und Stufe
@@ -23,8 +24,11 @@ Der Lernweg ist bewusst gestuft:
 
 - Zuerst werden neue Inhalte pur eingefuehrt: Buchstaben mit Klang und Schreibbild, maximal ein neues Wort, danach neue Saetze.
 - Danach mischt die App die Aufgaben: Buchstaben erkennen, Buchstaben schreiben, Bedeutung zuordnen, hoerend erkennen, Satzbau und Selbstabfrage kommen verteilt statt direkt hintereinander.
+- Am Anfang kommen mindestens drei neue Lerneinheiten. Spaeter werden faellige Wiederholungen zuerst geholt und mindestens eine neue Einheit ergaenzt.
+- Zahlen bekommen zusaetzlich eine Schreibaufgabe.
 - Pro Buchstabe, Wort und Satz wird separat gemerkt, ob er schon sicher sitzt.
 - Zahlen sind Teil des Wortschatzes und werden gezielt in den Uebungsmodus geholt.
+- Die Tages-Serie zaehlt abgeschlossene Lektionen, maximal einmal pro Tag.
 - Alphabet und Schreiben bleiben zusaetzlich verfuegbar, falls einzelne Inhalte gezielt wiederholt werden sollen.
 
 Die Intervalle sind in [content.js](content.js) definiert:

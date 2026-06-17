@@ -71,6 +71,7 @@ const lessonRomanDefaults = {
   wordRecognize: true,
   wordListen: false,
   wordRecall: true,
+  wordWrite: true,
   sentenceMeaning: true,
   sentenceBuild: true,
   sentenceListen: false,
@@ -85,6 +86,7 @@ const lessonTypeLabels = {
   wordRecognize: "Wort wählen",
   wordListen: "Wort hören",
   wordRecall: "Wort erinnern",
+  wordWrite: "Zahl schreiben",
   sentenceMeaning: "Satz verstehen",
   sentenceBuild: "Satz übersetzen",
   sentenceListen: "Satz hören",
@@ -127,6 +129,7 @@ const state = {
   knownLetters: new Set(),
   cards: {},
   streak: 0,
+  lastLessonDate: null,
   mediaRecorder: null,
   recordingChunks: [],
   drawingCompared: false,
@@ -149,6 +152,7 @@ const els = {
   tabs: $$(".tab"),
   views: {
     home: $("#homeView"),
+    phases: $("#phasesView"),
     lesson: $("#lessonView"),
     alphabet: $("#alphabetView"),
     drawing: $("#drawingView"),
@@ -322,12 +326,14 @@ function loadProgress() {
       state.knownLetters = new Set(saved.knownLetters || []);
       state.cards = saved.cards || {};
       state.streak = saved.streak || 0;
+      state.lastLessonDate = saved.lastLessonDate || null;
       return;
     }
     const legacy = JSON.parse(localStorage.getItem(legacyStoreKey));
     if (legacy) {
       state.knownLetters = new Set(legacy.knownLetters || []);
       state.streak = legacy.streak || 0;
+      state.lastLessonDate = null;
     }
   } catch {
     localStorage.removeItem(storeKey);
@@ -338,7 +344,8 @@ function saveProgress() {
   localStorage.setItem(storeKey, JSON.stringify({
     knownLetters: [...state.knownLetters],
     cards: state.cards,
-    streak: state.streak
+    streak: state.streak,
+    lastLessonDate: state.lastLessonDate
   }));
 }
 
@@ -365,14 +372,17 @@ function setView(view) {
   if (view === "lesson" && !state.lesson.steps.length) {
     startLesson();
   }
-  if (view === "home") {
+  if (view === "home" || view === "phases") {
     renderProgress();
     renderHomePhaseList();
   }
 }
 
 function renderProgress() {
-  const due = words.filter((item) => isDue(ensureCard("word", item))).length;
+  const due = words.filter((item) => {
+    const card = ensureCard("word", item);
+    return isDue(card) && !isNew(card);
+  }).length;
   const mastered = words.filter((item) => ensureCard("word", item).phase >= 6).length;
   els.dueCount.textContent = due;
   els.masteredCount.textContent = mastered;
@@ -688,11 +698,9 @@ function reviewItem(kind, item, correct) {
   if (correct) {
     card.phase = Math.min(6, card.phase + 1);
     card.correct += 1;
-    state.streak += 1;
   } else {
     card.phase = Math.max(1, card.phase - 2);
     card.wrong += 1;
-    state.streak = 0;
   }
   card.lastSeen = todayKey();
   card.nextDue = todayKey(phaseIntervals[card.phase - 1]);
@@ -719,18 +727,20 @@ function startLesson() {
 }
 
 function buildLessonSteps() {
-  const lessonLetterItems = pickLessonItems("letter", 2, 1);
-  const lessonWords = pickLessonItems("word", 4, 1);
-  const lessonSentences = pickLessonItems("sentence", 2, 1);
+  const lessonUnits = pickLessonUnits();
+  const lessonLetterItems = lessonUnits.filter((unit) => unit.kind === "letter").map((unit) => unit.item);
+  const lessonWords = lessonUnits.filter((unit) => unit.kind === "word").map((unit) => unit.item);
+  const lessonSentences = lessonUnits.filter((unit) => unit.kind === "sentence").map((unit) => unit.item);
   const teachSteps = [
-    ...lessonLetterItems.map((item) => lessonStep("teachLetter", "letter", item)),
-    ...lessonWords.map((item) => lessonStep("teachWord", "word", item)),
-    ...lessonSentences.map((item) => lessonStep("teachSentence", "sentence", item))
+    ...lessonUnits
+      .filter((unit) => unit.isNew)
+      .map((unit) => lessonStep(unit.kind === "letter" ? "teachLetter" : unit.kind === "word" ? "teachWord" : "teachSentence", unit.kind, unit.item))
   ];
   const practiceQueues = [
     lessonLetterItems.map((item) => lessonStep("letterRecognize", "letter", item, "erkennen")),
     lessonLetterItems.map((item) => lessonStep("letterWrite", "letter", item, "schreiben")),
     lessonWords.map((item) => lessonStep("wordRecognize", "word", item, "zuordnen")),
+    lessonWords.filter((item) => item.category === "Zahlen").map((item) => lessonStep("wordWrite", "word", item, "schreiben")),
     lessonSentences.map((item) => lessonStep("sentenceMeaning", "sentence", item, "bedeutung")),
     lessonWords.map((item) => lessonStep("wordListen", "word", item, "hoeren")),
     lessonSentences.map((item) => lessonStep("sentenceBuild", "sentence", item, "bauen")),
@@ -744,6 +754,40 @@ function buildLessonSteps() {
     ...interleaveLessonSteps(practiceQueues),
     { type: "lessonComplete" }
   ];
+}
+
+function pickLessonUnits() {
+  const dueReview = allLearningItems().filter(({ kind, item }) => {
+    const card = ensureCard(kind, item);
+    return isDue(card) && !isNew(card);
+  });
+  const newUnits = [
+    pickNewUnit("letter"),
+    pickNewUnit("word"),
+    pickNewUnit("sentence")
+  ].filter(Boolean);
+  const neededNewCount = dueReview.length ? 1 : 3;
+  return uniqueLessonUnits([...dueReview, ...newUnits.slice(0, Math.max(neededNewCount, 3 - dueReview.length))]);
+}
+
+function pickNewUnit(kind) {
+  const items = kind === "letter" ? lessonLetters : kind === "word" ? words : sentences;
+  const newItems = items.filter((item) => {
+    const card = ensureCard(kind, item);
+    return isDue(card) && isNew(card);
+  });
+  const selected = kind === "word" ? pickNewWords(newItems, 1)[0] : newItems[0];
+  return selected ? { kind, item: selected, isNew: true } : null;
+}
+
+function uniqueLessonUnits(units) {
+  const seen = new Set();
+  return units.filter((unit) => {
+    const key = unitKey(unit.kind, unit.item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function pickLessonItems(kind, count, maxNew = 1) {
@@ -838,6 +882,7 @@ function renderLesson() {
   if (step.type === "letterWrite") renderLetterWriteStep(step);
   if (step.type === "teachWord") renderTeachWordStep(step);
   if (step.type === "wordRecognize") renderWordRecognizeStep(step);
+  if (step.type === "wordWrite") renderWordWriteStep(step);
   if (step.type === "wordRecall") renderRecallStep(step);
   if (step.type === "wordListen") renderListenStep(step);
   if (step.type === "teachSentence") renderTeachSentenceStep(step);
@@ -857,11 +902,16 @@ function phaseLabel(kind, item) {
 function lessonButtonText(step) {
   if (isTeachingStep(step)) return "Weiter";
   if (step.type === "lessonComplete") return state.lesson.evaluated ? "Neue Übung" : "Stufen aktualisieren";
+  if (isSelfCheckStep(step)) return "Weiter";
   return "Überprüfen";
 }
 
 function isTeachingStep(step) {
   return step.type === "teachLetter" || step.type === "teachWord" || step.type === "teachSentence";
+}
+
+function isSelfCheckStep(step) {
+  return step.type === "wordRecall" || step.type === "sentenceRecall" || step.type === "letterWrite" || step.type === "wordWrite";
 }
 
 function lessonHeadingMarkup(step, title) {
@@ -958,6 +1008,35 @@ function renderLetterWriteStep(step) {
         <button class="secondary-button" id="lessonClearCanvasButton">Löschen</button>
         <div class="recall-answer hidden" id="lessonLetterAnswer">
           <strong>${step.item.char}</strong>
+          ${romanLine(step.item, step)}
+        </div>
+      </div>
+    </div>
+    <div class="recall-actions" id="recallActions">
+      <button class="secondary-button danger-button" data-self-check="false">Nicht gewusst</button>
+      <button class="secondary-button success-button" data-self-check="true">Gewusst</button>
+    </div>
+  `;
+  bindLessonWritingCanvas();
+  bindLessonSelfCheck();
+  $("#lessonShowLetterButton").addEventListener("click", () => {
+    $("#lessonLetterAnswer").classList.remove("hidden");
+    playItem(step.item);
+  });
+  $("#lessonClearCanvasButton").addEventListener("click", clearLessonWritingCanvas);
+}
+
+function renderWordWriteStep(step) {
+  els.lessonStage.innerHTML = `
+    ${lessonHeadingMarkup(step, "Schreibe die Zahl auf Nepali")}
+    <div class="lesson-writing">
+      <canvas class="lesson-canvas" id="lessonWritingCanvas" width="520" height="360" aria-label="Zahlwort zeichnen"></canvas>
+      <div class="lesson-writing-side">
+        <p>Schreibe <strong>${step.item.german}</strong> auf Nepali.</p>
+        <button class="secondary-button" id="lessonShowLetterButton">Zahl anzeigen</button>
+        <button class="secondary-button" id="lessonClearCanvasButton">Löschen</button>
+        <div class="recall-answer word-writing-answer hidden" id="lessonLetterAnswer">
+          <strong>${step.item.nepali}</strong>
           ${romanLine(step.item, step)}
         </div>
       </div>
@@ -1134,7 +1213,7 @@ function bindLessonWritingCanvas() {
   const context = canvas.getContext("2d");
   let drawing = false;
   let previous = null;
-  context.lineWidth = 18;
+  context.lineWidth = 12;
   context.lineCap = "round";
   context.lineJoin = "round";
   context.strokeStyle = "#334855";
@@ -1280,7 +1359,7 @@ function checkLessonAnswer(step) {
   if (step.type === "sentenceBuild") {
     const answer = state.lesson.selected.map((button) => button.dataset.word.toLowerCase()).join(" ");
     correct = answer === tokenizeGerman(step.item.german).join(" ");
-  } else if (step.type === "wordRecall" || step.type === "sentenceRecall" || step.type === "letterWrite") {
+  } else if (isSelfCheckStep(step)) {
     correct = state.lesson.selected[0]?.dataset.selfCheck === "true";
   } else {
     correct = state.lesson.selected[0]?.dataset.correct === "true";
@@ -1288,20 +1367,16 @@ function checkLessonAnswer(step) {
   state.lesson.checked = true;
   playAnswerAfterCheckIfNeeded(step);
   recordLessonResult(step, correct);
-  if (step.type === "wordRecall" || step.type === "sentenceRecall" || step.type === "letterWrite") {
+  if (isSelfCheckStep(step)) {
     if (correct) {
       showLessonFeedback("correct", "Gut erinnert!", randomCopy("recallCorrect"));
-      state.streak += 1;
     } else {
       showLessonFeedback("wrong", "Leider nicht gewusst", randomCopy("recallWrong"));
-      state.streak = 0;
     }
   } else if (correct) {
     showLessonFeedback("correct", "Richtig!", randomCopy("correct"));
-    state.streak += 1;
   } else {
     showLessonFeedback("wrong", "Leider falsch", correctAnswerText(step));
-    state.streak = 0;
   }
   saveProgress();
   renderProgress();
@@ -1312,7 +1387,7 @@ function checkLessonAnswer(step) {
 }
 
 function playAnswerAfterCheckIfNeeded(step) {
-  if (step.type === "sentenceMeaning" || step.type === "sentenceBuild") {
+  if (step.type === "sentenceMeaning") {
     playItem(step.item);
     return;
   }
@@ -1383,12 +1458,22 @@ function lessonCompleteText(summary) {
     return "Schau dir kurz an, was schon sicher sitzt und was du in der nächsten Runde nochmal bekommst.";
   }
   if (summary.failed === 0) return "Alles aus dieser Runde sitzt. Beim nächsten Mal darf es ruhig etwas gemischter werden.";
-  if (summary.passed === 0) return "Das sitzt noch nicht sicher genug, aber genau dafür ist die Wiederholung da. Du bekommst diese Inhalte wieder.";
+  if (summary.passed === 0) return "Das sitzt noch nicht sicher. Du bekommst diese Inhalte wieder.";
   return "Was sicher war, zählt als geschafft. Was noch wackelt, kommt nochmal dran.";
 }
 
 function evaluateLessonRun() {
   lessonUnits().forEach((unit) => reviewItem(unit.kind, unit.item, unitPassed(unit.key)));
+  updateDailyLessonStreak();
+  saveProgress();
+  renderProgress();
+}
+
+function updateDailyLessonStreak() {
+  const today = todayKey();
+  if (state.lastLessonDate === today) return;
+  state.streak = state.lastLessonDate === todayKey(-1) ? state.streak + 1 : 1;
+  state.lastLessonDate = today;
 }
 
 function showLessonFeedback(status, title, text) {
