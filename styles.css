@@ -253,7 +253,7 @@ body[data-view="lesson"] .app-shell {
 
 .lesson-heading-row {
   display: flex;
-  align-items: start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
@@ -276,8 +276,16 @@ body[data-view="lesson"] .app-shell {
   color: #166534;
 }
 
+.listen-control-row {
+  min-height: 52px;
+}
+
+.listen-audio-button {
+  width: 58px;
+  height: 58px;
+}
+
 .audio-square,
-.big-audio-button,
 .audio-split {
   display: inline-grid;
   place-items: center;
@@ -300,11 +308,6 @@ body[data-view="lesson"] .app-shell {
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-.big-audio-button .audio-icon {
-  width: 34px;
-  height: 34px;
 }
 
 .lesson-intro-card,
@@ -402,13 +405,6 @@ body[data-view="lesson"] .app-shell {
   width: 52px;
   height: 52px;
   justify-self: end;
-}
-
-.big-audio-button {
-  width: 76px;
-  height: 76px;
-  justify-self: center;
-  font-size: 1.6rem;
 }
 
 .answer-grid {
@@ -522,6 +518,12 @@ body[data-view="lesson"] .app-shell {
   align-items: stretch;
 }
 
+.lesson-writing-full {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 10px;
+}
+
 .lesson-canvas {
   width: 100%;
   aspect-ratio: 1.15;
@@ -562,6 +564,30 @@ body[data-view="lesson"] .app-shell {
 
 .lesson-writing-side .recall-answer span {
   font-size: clamp(1.65rem, 6vw, 2.4rem);
+}
+
+.lesson-writing-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.writing-answer {
+  width: min(100%, 520px);
+  justify-items: center;
+  border-top: 0;
+  padding-top: 0;
+  text-align: center;
+}
+
+.writing-answer strong {
+  font-size: clamp(5rem, 18vw, 9rem);
+  line-height: 0.95;
+}
+
+.word-writing-answer strong {
+  font-size: clamp(3.6rem, 13vw, 6.8rem);
 }
 
 .recall-card {
@@ -1284,6 +1310,10 @@ dialog p {
 
   .lesson-heading-row {
     display: grid;
+  }
+
+  .listen-control-row {
+    display: flex;
   }
 
   .roman-toggle {

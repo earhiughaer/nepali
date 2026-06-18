@@ -82,7 +82,7 @@ const lessonTypeLabels = {
   teachWord: "Neues Wort",
   teachSentence: "Neuer Satz",
   teachLetter: "Neuer Buchstabe",
-  letterRecognize: "Wähle den richtigen Buchstaben",
+  letterRecognize: "Wähle den Buchstaben",
   letterWrite: "Buchstabe schreiben",
   wordRecognize: "Wort wählen",
   wordListen: "Wort hören",
@@ -753,12 +753,12 @@ function buildLessonSteps() {
   ];
   const practiceQueues = [
     lessonLetterItems.map((item) => lessonStep("letterRecognize", "letter", item, "erkennen")),
-    lessonLetterItems.map((item) => lessonStep("letterWrite", "letter", item, "schreiben")),
     lessonWords.map((item) => lessonStep("wordRecognize", "word", item, "zuordnen")),
-    lessonWords.filter((item) => item.category === "Zahlen").map((item) => lessonStep("wordWrite", "word", item, "schreiben")),
     lessonSentences.map((item) => lessonStep("sentenceMeaning", "sentence", item, "bedeutung")),
     lessonWords.map((item) => lessonStep("wordListen", "word", item, "hoeren")),
+    lessonLetterItems.map((item) => lessonStep("letterWrite", "letter", item, "schreiben")),
     lessonSentences.map((item) => lessonStep("sentenceBuild", "sentence", item, "bauen")),
+    lessonWords.filter((item) => item.category === "Zahlen").map((item) => lessonStep("wordWrite", "word", item, "schreiben")),
     lessonWords.map((item) => lessonStep("wordRecall", "word", item, "erinnern")),
     lessonSentences.map((item) => lessonStep("sentenceListen", "sentence", item, "hoeren")),
     lessonSentences.map((item) => lessonStep("sentenceRecall", "sentence", item, "erinnern"))
@@ -841,26 +841,36 @@ function interleaveLessonSteps(queues) {
   const openQueues = queues.filter((queue) => queue.length);
   const mixed = [];
   let cursor = 0;
+  const preferredGap = 3;
   while (openQueues.some((queue) => queue.length)) {
     let queueIndex = -1;
-    for (let offset = 0; offset < openQueues.length; offset += 1) {
-      const index = (cursor + offset) % openQueues.length;
-      const queue = openQueues[index];
-      if (!queue.length) continue;
-      const last = mixed[mixed.length - 1];
-      if (!last || last.unit !== queue[0].unit) {
+    let stepIndex = 0;
+    for (let gap = preferredGap; gap >= 0 && queueIndex < 0; gap -= 1) {
+      for (let offset = 0; offset < openQueues.length; offset += 1) {
+        const index = (cursor + offset) % openQueues.length;
+        const queue = openQueues[index];
+        if (!queue.length) continue;
+        const candidateIndex = queue.findIndex((step) => !hasRecentUnit(mixed, step.unit, gap));
+        if (candidateIndex < 0) continue;
         queueIndex = index;
+        stepIndex = candidateIndex;
         break;
       }
     }
     if (queueIndex < 0) {
       queueIndex = openQueues.findIndex((candidate) => candidate.length);
+      stepIndex = 0;
     }
     const queue = openQueues[queueIndex];
-    mixed.push(queue.shift());
+    mixed.push(queue.splice(stepIndex, 1)[0]);
     cursor = (queueIndex + 1) % openQueues.length;
   }
   return mixed;
+}
+
+function hasRecentUnit(steps, unit, gap) {
+  if (gap <= 0) return false;
+  return steps.slice(-gap).some((step) => step.unit === unit);
 }
 
 function unitKey(kind, item) {
@@ -918,7 +928,7 @@ function lessonTitle(step) {
   if (!step) return "Üben";
   const titles = {
     teachLetter: "Neuer Buchstabe",
-    letterRecognize: "Wähle den richtigen Buchstaben",
+    letterRecognize: "Wähle den Buchstaben",
     letterWrite: "Schreibe den Buchstaben",
     teachWord: "Neues Wort",
     wordRecognize: "Wähle die richtige Antwort",
@@ -950,15 +960,26 @@ function isSelfCheckStep(step) {
   return step.type === "wordRecall" || step.type === "sentenceRecall" || step.type === "letterWrite" || step.type === "wordWrite";
 }
 
-function lessonHeadingMarkup(step, title) {
+function lessonHeadingMarkup(step) {
+  if (!canToggleRoman(step)) return "";
   return `
     <div class="lesson-heading-row">
-      <h2>${title}</h2>
+      <button class="roman-toggle" data-roman-toggle="${step.type}" type="button" aria-pressed="${shouldShowRoman(step)}">
+        ${lessonTypeLabels[step.type] || "Diese Aufgabe"}: Lautschrift ${shouldShowRoman(step) ? "an" : "aus"}
+      </button>
+    </div>
+  `;
+}
+
+function lessonAudioControlMarkup(step) {
+  return `
+    <div class="lesson-heading-row listen-control-row">
       ${canToggleRoman(step) ? `
         <button class="roman-toggle" data-roman-toggle="${step.type}" type="button" aria-pressed="${shouldShowRoman(step)}">
           ${lessonTypeLabels[step.type] || "Diese Aufgabe"}: Lautschrift ${shouldShowRoman(step) ? "an" : "aus"}
         </button>
-      ` : ""}
+      ` : "<span></span>"}
+      <button class="audio-square listen-audio-button" data-audio-kind="${step.kind}" type="button" aria-label="Anhören">${audioIcon()}</button>
     </div>
   `;
 }
@@ -974,12 +995,12 @@ function bindRomanToggle(step) {
 }
 
 function shouldShowRoman(step) {
-  if (step.type === "letterRecognize") return false;
+  if (["letterRecognize", "letterWrite", "wordWrite"].includes(step.type)) return false;
   return state.lessonRoman[step.type] !== false;
 }
 
 function canToggleRoman(step) {
-  return step.type !== "letterRecognize";
+  return !["letterRecognize", "letterWrite", "wordWrite"].includes(step.type);
 }
 
 function romanLine(item, step) {
@@ -998,7 +1019,7 @@ function audioIcon() {
 
 function renderTeachLetterStep(step) {
   els.lessonStage.innerHTML = `
-    ${lessonHeadingMarkup(step, "Neuer Buchstabe: ansehen und anhören")}
+    ${lessonHeadingMarkup(step)}
     <div class="lesson-intro-card letter-intro-card">
       <div class="lesson-word-lines">
         <strong>${step.item.char}</strong>
@@ -1034,17 +1055,16 @@ function renderLetterRecognizeStep(step) {
 
 function renderLetterWriteStep(step) {
   els.lessonStage.innerHTML = `
-    ${lessonHeadingMarkup(step, "Schreibe den Buchstaben")}
-    <div class="lesson-writing">
+    ${lessonHeadingMarkup(step)}
+    <div class="lesson-writing lesson-writing-full">
       <canvas class="lesson-canvas" id="lessonWritingCanvas" width="520" height="520" aria-label="Buchstaben zeichnen"></canvas>
-      <div class="lesson-writing-side">
-        <p>Zeichne <strong>${step.item.roman}</strong> aus dem Gedächtnis.</p>
+      <div class="recall-answer writing-answer hidden" id="lessonLetterAnswer">
+        <strong>${step.item.char}</strong>
+        ${romanLine(step.item, step)}
+      </div>
+      <div class="lesson-writing-tools">
         <button class="secondary-button" id="lessonShowLetterButton">Buchstabe anzeigen</button>
         <button class="secondary-button" id="lessonClearCanvasButton">Löschen</button>
-        <div class="recall-answer hidden" id="lessonLetterAnswer">
-          <strong>${step.item.char}</strong>
-          ${romanLine(step.item, step)}
-        </div>
       </div>
     </div>
     <div class="recall-actions" id="recallActions">
@@ -1063,17 +1083,16 @@ function renderLetterWriteStep(step) {
 
 function renderWordWriteStep(step) {
   els.lessonStage.innerHTML = `
-    ${lessonHeadingMarkup(step, "Schreibe die Zahl auf Nepali")}
-    <div class="lesson-writing">
+    ${lessonHeadingMarkup(step)}
+    <div class="lesson-writing lesson-writing-full">
       <canvas class="lesson-canvas" id="lessonWritingCanvas" width="520" height="360" aria-label="Zahlwort zeichnen"></canvas>
-      <div class="lesson-writing-side">
-        <p>Schreibe <strong>${step.item.german}</strong> auf Nepali.</p>
+      <div class="recall-answer writing-answer word-writing-answer hidden" id="lessonLetterAnswer">
+        <strong>${step.item.nepali}</strong>
+        ${romanLine(step.item, step)}
+      </div>
+      <div class="lesson-writing-tools">
         <button class="secondary-button" id="lessonShowLetterButton">Zahl anzeigen</button>
         <button class="secondary-button" id="lessonClearCanvasButton">Löschen</button>
-        <div class="recall-answer word-writing-answer hidden" id="lessonLetterAnswer">
-          <strong>${step.item.nepali}</strong>
-          ${romanLine(step.item, step)}
-        </div>
       </div>
     </div>
     <div class="recall-actions" id="recallActions">
@@ -1092,7 +1111,7 @@ function renderWordWriteStep(step) {
 
 function renderTeachWordStep(step) {
   els.lessonStage.innerHTML = `
-    ${lessonHeadingMarkup(step, "Neues Wort: erst ansehen und anhören")}
+    ${lessonHeadingMarkup(step)}
     <div class="lesson-intro-card">
       <div class="lesson-word-lines">
         <strong>${step.item.nepali}</strong>
@@ -1108,7 +1127,7 @@ function renderTeachWordStep(step) {
 
 function renderTeachSentenceStep(step) {
   els.lessonStage.innerHTML = `
-    ${lessonHeadingMarkup(step, "Neuer Satz: Bedeutung und Aussprache")}
+    ${lessonHeadingMarkup(step)}
     <div class="lesson-intro-card sentence-intro-card">
       <div class="lesson-word-lines">
         <strong>${step.item.nepali}</strong>
@@ -1125,7 +1144,7 @@ function renderTeachSentenceStep(step) {
 function renderWordRecognizeStep(step) {
   const options = optionSet(words, step.item, "german", 4);
   els.lessonStage.innerHTML = `
-    ${lessonHeadingMarkup(step, "Wähle die richtige Antwort")}
+    ${lessonHeadingMarkup(step)}
     <div class="lesson-prompt-card">
       <span>${step.item.german}</span>
       <button class="audio-square" data-audio-kind="word" type="button" aria-label="Anhören">${audioIcon()}</button>
@@ -1142,7 +1161,7 @@ function renderWordRecognizeStep(step) {
 function renderSentenceMeaningStep(step) {
   const options = optionSet(sentences, step.item, "german", 4);
   els.lessonStage.innerHTML = `
-    ${lessonHeadingMarkup(step, "Wähle die passende Bedeutung")}
+    ${lessonHeadingMarkup(step)}
     <div class="lesson-prompt-card tall">
       <div>
         <strong>${step.item.nepali}</strong>
@@ -1162,8 +1181,7 @@ function renderListenStep(step) {
   const items = step.kind === "word" ? words : sentences;
   const options = optionSet(items, step.item, "roman", 4);
   els.lessonStage.innerHTML = `
-    ${lessonHeadingMarkup(step, "Was hast du gehört?")}
-    <button class="big-audio-button" data-audio-kind="${step.kind}" type="button" aria-label="Anhören">${audioIcon()}</button>
+    ${lessonAudioControlMarkup(step)}
     <div class="choice-list">
       ${options.map((item) => `
         <button class="choice-answer stacked" data-correct="${item.id === step.item.id}">
@@ -1189,7 +1207,7 @@ function renderBuildSentenceStep(step) {
     .slice(0, 8);
   const chips = shuffle([...correctWords, ...distractors]);
   els.lessonStage.innerHTML = `
-    ${lessonHeadingMarkup(step, "Übersetze diesen Satz")}
+    ${lessonHeadingMarkup(step)}
     <div class="lesson-prompt-card tall">
       <div>
         <strong>${step.item.nepali}</strong>
@@ -1209,7 +1227,7 @@ function renderBuildSentenceStep(step) {
 function renderRecallStep(step) {
   const isSentence = step.kind === "sentence";
   els.lessonStage.innerHTML = `
-    ${lessonHeadingMarkup(step, isSentence ? "Erinnere dich an den Nepali-Satz" : "Wie heißt das Wort auf Nepali?")}
+    ${lessonHeadingMarkup(step)}
     <div class="recall-card" id="recallCard">
       <p>${step.item.german}</p>
       <button class="secondary-button" id="revealRecallButton">Aufdecken</button>
