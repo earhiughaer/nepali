@@ -176,8 +176,7 @@ select {
   display: block;
 }
 
-body[data-view="lesson"] .topbar,
-body[data-view="lesson"] .prayer-flags {
+body[data-view="lesson"] .topbar {
   display: none;
 }
 
@@ -646,19 +645,22 @@ body[data-view="lesson"] .app-shell {
   border-color: #129cef;
   background: #eef8ff;
   color: #0f6fa8;
-  box-shadow: 0 0 0 3px rgba(18, 156, 239, 0.16);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 0 5px rgba(18, 156, 239, 0.22), 0 14px 28px rgba(15, 23, 42, 0.14);
 }
 
 .recall-actions button.selected.success-button {
   border-color: #22c55e;
   background: #ecfdf5;
   color: #166534;
+  box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.24), 0 14px 28px rgba(15, 23, 42, 0.14);
 }
 
 .recall-actions button.selected.danger-button {
   border-color: #ef4444;
   background: #fef2f2;
   color: #991b1b;
+  box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.24), 0 14px 28px rgba(15, 23, 42, 0.14);
 }
 
 #revealRecallButton.revealed,
@@ -1416,7 +1418,7 @@ dialog p {
 
 .prayer-flags {
   pointer-events: none;
-  position: absolute;
+  position: fixed;
   top: 20px;
   right: 86px;
   width: min(410px, 48vw);

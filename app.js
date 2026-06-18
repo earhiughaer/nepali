@@ -1130,12 +1130,16 @@ function nepaliNumberDigit(item) {
   return digits[item.id] || item.nepali;
 }
 
+function wordDisplayText(item) {
+  return item.category === "Zahlen" ? nepaliNumberDigit(item) : item.nepali;
+}
+
 function renderTeachWordStep(step) {
   els.lessonStage.innerHTML = `
     ${lessonHeadingMarkup(step)}
     <div class="lesson-intro-card">
       <div class="lesson-word-lines">
-        <strong>${step.item.nepali}</strong>
+        <strong>${wordDisplayText(step.item)}</strong>
         ${romanLine(step.item, step)}
         <em>${step.item.german}</em>
       </div>
@@ -1206,7 +1210,7 @@ function renderListenStep(step) {
     <div class="choice-list">
       ${options.map((item) => `
         <button class="choice-answer stacked" data-correct="${item.id === step.item.id}">
-          <strong>${item.nepali}</strong>
+          <strong>${step.kind === "word" ? wordDisplayText(item) : item.nepali}</strong>
           ${romanLine(item, step)}
         </button>
       `).join("")}
@@ -1247,13 +1251,14 @@ function renderBuildSentenceStep(step) {
 
 function renderRecallStep(step) {
   const isSentence = step.kind === "sentence";
+  const answerText = isSentence ? step.item.nepali : wordDisplayText(step.item);
   els.lessonStage.innerHTML = `
     ${lessonHeadingMarkup(step)}
     <div class="recall-card" id="recallCard">
       <p>${step.item.german}</p>
       <button class="secondary-button" id="revealRecallButton">Aufdecken</button>
       <div class="recall-answer hidden" id="recallAnswer">
-        <strong>${step.item.nepali}</strong>
+        <strong>${answerText}</strong>
         ${romanLine(step.item, step)}
       </div>
     </div>
@@ -1337,7 +1342,7 @@ function clearLessonWritingCanvas() {
 function optionButtonMarkup(item, correct, step) {
   return `
     <button class="answer-card" data-correct="${correct}" data-item-id="${item.id}">
-      <strong>${item.nepali}</strong>
+      <strong>${wordDisplayText(item)}</strong>
       ${romanLine(item, step)}
     </button>
   `;
@@ -1564,7 +1569,7 @@ function correctAnswerText(step) {
   if (step.kind === "letter") {
     return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-devanagari">${step.item.char}</span><span class="correct-answer-roman">${step.item.roman}</span>`;
   }
-  return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-devanagari">${step.item.nepali}</span><span class="correct-answer-roman">${step.item.roman}</span>`;
+  return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-devanagari">${wordDisplayText(step.item)}</span><span class="correct-answer-roman">${step.item.roman}</span>`;
 }
 
 function markLessonAnswers(correct) {
@@ -1671,7 +1676,7 @@ async function playCorrectSound() {
 async function playLevelUpSound() {
   if (!state.soundEnabled) return;
   try {
-    const player = state.levelUpSound || new Audio("levelup.wav");
+    const player = state.levelUpSound || new Audio("fanfaren.mp3");
     state.levelUpSound = player;
     player.pause();
     player.currentTime = 0;
@@ -1682,7 +1687,7 @@ async function playLevelUpSound() {
     await player.play();
     await finished;
   } catch {
-    // levelup.wav is optional; if it is missing or blocked, the evaluation still works.
+    // fanfaren.mp3 is optional; if it is missing or blocked, the evaluation still works.
   }
 }
 
@@ -1700,7 +1705,7 @@ function prepareCorrectSound() {
   state.correctSound.preload = "auto";
   state.correctSound.load();
   if (!state.levelUpSound) {
-    state.levelUpSound = new Audio("levelup.wav");
+    state.levelUpSound = new Audio("fanfaren.mp3");
     state.levelUpSound.preload = "auto";
     state.levelUpSound.load();
   }
