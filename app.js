@@ -68,6 +68,7 @@ const lessonRomanKey = "nepali-pwa-lesson-roman-v3";
 const soundKey = "nepali-pwa-sound-v1";
 const legacyStoreKey = "nepali-pwa-progress-v1";
 const lessonUnitGap = 4;
+const maxNewLessonUnits = 4;
 const letterAudioByChar = {
   "अ": "alphabet/vowels/01_a_अ.mp3",
   "आ": "alphabet/vowels/02_aa_आ.mp3",
@@ -850,13 +851,6 @@ function drawingSimilarityScore(canvas, context, targetChar) {
 }
 
 function compareLessonWriting(targetChar) {
-  const canvas = $("#lessonWritingCanvas");
-  const bar = $("#lessonScoreBar");
-  const copy = $("#lessonScoreCopy");
-  if (!canvas || !bar || !copy) return;
-  const score = drawingSimilarityScore(canvas, canvas.getContext("2d", { willReadFrequently: true }), targetChar);
-  bar.style.width = `${score}%`;
-  copy.textContent = `${score}% Ähnlichkeit.`;
   $("#lessonWritingTarget")?.classList.remove("hidden");
 }
 
@@ -1078,6 +1072,7 @@ function fillLessonUnits(units, minimumCount) {
     .sort((a, b) => unitPriority(a) - unitPriority(b));
   candidates.forEach((candidate) => {
     if (selected.length >= minimumCount) return;
+    if (isNew(ensureCard(candidate.kind, candidate.item)) && newLessonUnitCount(selected) >= maxNewLessonUnits) return;
     selected.push({
       ...candidate,
       isNew: isNew(ensureCard(candidate.kind, candidate.item))
@@ -1085,6 +1080,10 @@ function fillLessonUnits(units, minimumCount) {
     selectedKeys.add(unitKey(candidate.kind, candidate.item));
   });
   return selected;
+}
+
+function newLessonUnitCount(units) {
+  return units.filter((unit) => unit.isNew || isNew(ensureCard(unit.kind, unit.item))).length;
 }
 
 function unitPriority({ kind, item }) {
@@ -1326,12 +1325,13 @@ function bindRomanToggle(step) {
 }
 
 function shouldShowRoman(step) {
+  if (step.type === "teachLetter") return true;
   if (["letterRecognize", "letterWrite", "wordWrite"].includes(step.type)) return false;
   return state.lessonRoman[step.type] !== false;
 }
 
 function canToggleRoman(step) {
-  return !["letterRecognize", "letterWrite", "wordWrite", "sentenceMeaning"].includes(step.type);
+  return !["teachLetter", "letterRecognize", "letterWrite", "wordWrite", "sentenceMeaning"].includes(step.type);
 }
 
 function romanLine(item, step) {
@@ -1409,11 +1409,10 @@ function renderLetterWriteStep(step) {
       </div>
       <div class="lesson-writing-tools">
         <button class="primary-button" id="lessonCompareWritingButton">Vergleichen</button>
+        <button class="secondary-button audio-inline-button" id="lessonPlayWritingAudioButton" type="button" aria-label="Buchstabe anhören">${audioIcon()}</button>
         <button class="secondary-button" id="lessonShowLetterButton">Buchstabe anzeigen</button>
         <button class="secondary-button" id="lessonClearCanvasButton">Löschen</button>
       </div>
-      <div class="score-meter lesson-score-meter" aria-label="Ähnlichkeit"><span id="lessonScoreBar"></span></div>
-      <p class="score-copy" id="lessonScoreCopy">Zeichne erst aus dem Gedächtnis.</p>
     </div>
     <div class="recall-actions" id="recallActions">
       <button class="secondary-button danger-button" data-self-check="false">Nicht gewusst</button>
@@ -1422,7 +1421,11 @@ function renderLetterWriteStep(step) {
   `;
   bindLessonWritingCanvas();
   bindLessonSelfCheck();
-  $("#lessonCompareWritingButton").addEventListener("click", () => compareLessonWriting(step.item.char));
+  $("#lessonCompareWritingButton").addEventListener("click", () => {
+    compareLessonWriting(step.item.char);
+    playItem(step.item);
+  });
+  $("#lessonPlayWritingAudioButton").addEventListener("click", () => playItem(step.item));
   $("#lessonShowLetterButton").addEventListener("click", () => {
     $("#lessonWritingTarget").classList.remove("hidden");
     $("#lessonLetterAnswer").classList.remove("hidden");
@@ -1446,11 +1449,10 @@ function renderWordWriteStep(step) {
       </div>
       <div class="lesson-writing-tools">
         <button class="primary-button" id="lessonCompareWritingButton">Vergleichen</button>
+        <button class="secondary-button audio-inline-button" id="lessonPlayWritingAudioButton" type="button" aria-label="Zahl anhören">${audioIcon()}</button>
         <button class="secondary-button" id="lessonShowLetterButton">Zahl anzeigen</button>
         <button class="secondary-button" id="lessonClearCanvasButton">Löschen</button>
       </div>
-      <div class="score-meter lesson-score-meter" aria-label="Ähnlichkeit"><span id="lessonScoreBar"></span></div>
-      <p class="score-copy" id="lessonScoreCopy">Zeichne erst aus dem Gedächtnis.</p>
     </div>
     <div class="recall-actions" id="recallActions">
       <button class="secondary-button danger-button" data-self-check="false">Nicht gewusst</button>
@@ -1459,10 +1461,15 @@ function renderWordWriteStep(step) {
   `;
   bindLessonWritingCanvas();
   bindLessonSelfCheck();
-  $("#lessonCompareWritingButton").addEventListener("click", () => compareLessonWriting(digit));
+  $("#lessonCompareWritingButton").addEventListener("click", () => {
+    compareLessonWriting(digit);
+    playItem(step.item);
+  });
+  $("#lessonPlayWritingAudioButton").addEventListener("click", () => playItem(step.item));
   $("#lessonShowLetterButton").addEventListener("click", () => {
     $("#lessonWritingTarget").classList.remove("hidden");
     $("#lessonLetterAnswer").classList.remove("hidden");
+    playItem(step.item);
   });
   $("#lessonClearCanvasButton").addEventListener("click", clearLessonWritingCanvas);
 }
@@ -2219,11 +2226,13 @@ function bindEvents() {
     state.letterIndex -= 1;
     state.letterFlipped = false;
     renderLetter();
+    playItem(currentLetter());
   });
   els.nextLetterButton.addEventListener("click", () => {
     state.letterIndex += 1;
     state.letterFlipped = false;
     renderLetter();
+    playItem(currentLetter());
   });
   els.speakLetterButton.addEventListener("click", () => playItem(currentLetter()));
   els.toggleKnownLetterButton.addEventListener("click", () => {

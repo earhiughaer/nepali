@@ -64,6 +64,8 @@ def nearest_frame_index(frames, time_s: float):
 
 def main():
     duration = float(sys.argv[1]) if len(sys.argv) > 1 else 8.829375
+    lead_trim = float(sys.argv[2]) if len(sys.argv) > 2 else 0.0
+    tail_trim = float(sys.argv[3]) if len(sys.argv) > 3 else 0.0
     regions = [(i * duration / len(NUMBERS), (i + 1) * duration / len(NUMBERS)) for i in range(len(NUMBERS))]
     data = INPUT.read_bytes()
     frames = parse_frames(data)
@@ -73,12 +75,14 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     manifest = []
     for idx, ((digit, label), (start, end)) in enumerate(zip(NUMBERS, regions)):
-        start_idx = nearest_frame_index(frames, max(0.0, start))
-        end_idx = nearest_frame_index(frames, end)
+        adjusted_start = max(0.0, start + lead_trim)
+        adjusted_end = max(adjusted_start, end - tail_trim)
+        start_idx = nearest_frame_index(frames, adjusted_start)
+        end_idx = nearest_frame_index(frames, adjusted_end)
         end_idx = min(len(frames) - 1, max(start_idx, end_idx))
         filename = f"{idx:02d}_{label}_{digit}.mp3"
         (OUT_DIR / filename).write_bytes(data[frames[start_idx][0]:frames[end_idx][1]])
-        manifest.append(f"{idx}\t{digit}\t{label}\t{start:.3f}\t{end:.3f}\t{filename}")
+        manifest.append(f"{idx}\t{digit}\t{label}\t{adjusted_start:.3f}\t{adjusted_end:.3f}\t{filename}")
 
     (OUT_DIR / "manifest.tsv").write_text("zahl\tzeichen\tdeutsche_lautschrift\tstart\tende\tdatei\n" + "\n".join(manifest) + "\n")
     print(f"Wrote {len(NUMBERS)} files to {OUT_DIR}")

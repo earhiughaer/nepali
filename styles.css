@@ -641,6 +641,19 @@ body[data-view="lesson"] .app-shell {
   gap: 10px;
 }
 
+.audio-inline-button {
+  width: 46px;
+  min-width: 46px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+}
+
+.audio-inline-button .audio-icon {
+  width: 22px;
+  height: 22px;
+}
+
 .writing-answer {
   width: min(100%, 520px);
   justify-items: center;

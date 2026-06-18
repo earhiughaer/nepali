@@ -101,6 +101,8 @@ def nearest_frame_index(frames, time_s: float):
 
 def main():
     regions_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("alphabet/regions.txt")
+    lead_trim = float(sys.argv[2]) if len(sys.argv) > 2 else 0.0
+    tail_trim = float(sys.argv[3]) if len(sys.argv) > 3 else 0.0
     regions = parse_regions(regions_path)
     if len(regions) != len(LETTERS):
         raise SystemExit(f"Expected {len(LETTERS)} regions, got {len(regions)}")
@@ -113,15 +115,17 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     manifest = []
     for idx, ((letter, label), (start, end)) in enumerate(zip(LETTERS, regions), start=1):
-        start_idx = nearest_frame_index(frames, max(0.0, start))
-        end_idx = nearest_frame_index(frames, end)
+        adjusted_start = max(0.0, start + lead_trim)
+        adjusted_end = max(adjusted_start, end - tail_trim)
+        start_idx = nearest_frame_index(frames, adjusted_start)
+        end_idx = nearest_frame_index(frames, adjusted_end)
         end_idx = min(len(frames) - 1, max(start_idx, end_idx))
         start_byte = frames[start_idx][0]
         end_byte = frames[end_idx][1]
         filename = f"{idx:02d}_{label}_{letter}.mp3"
         out = OUT_DIR / filename
         out.write_bytes(data[start_byte:end_byte])
-        manifest.append(f"{idx:02d}\t{letter}\t{label}\t{start:.3f}\t{end:.3f}\t{filename}")
+        manifest.append(f"{idx:02d}\t{letter}\t{label}\t{adjusted_start:.3f}\t{adjusted_end:.3f}\t{filename}")
 
     (OUT_DIR / "manifest.tsv").write_text("nr\tzeichen\tdeutsche_lautschrift\tstart\tende\tdatei\n" + "\n".join(manifest) + "\n")
     print(f"Wrote {len(LETTERS)} files to {OUT_DIR}")
