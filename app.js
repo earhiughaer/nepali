@@ -411,13 +411,13 @@ function renderHomePhaseList() {
   if (!els.homePhaseTabs || !els.homePhaseList) return;
   els.homePhaseTabs.innerHTML = "";
   for (let phase = 1; phase <= 6; phase += 1) {
-    const count = words.filter((item) => ensureCard("word", item).phase === phase).length;
+    const count = phaseLearningItems(phase).length;
     const button = document.createElement("button");
     button.className = "home-phase-button";
     button.classList.toggle("active", state.homePhase === phase);
     button.type = "button";
     button.textContent = `Stufe ${phase}`;
-    button.setAttribute("aria-label", `Stufe ${phase}, ${count} Wörter`);
+    button.setAttribute("aria-label", `Stufe ${phase}, ${count} Inhalte`);
     button.addEventListener("click", () => {
       state.homePhase = phase;
       renderHomePhaseList();
@@ -428,20 +428,40 @@ function renderHomePhaseList() {
     els.homePhaseTabs.append(button);
   }
 
-  const phaseWords = words.filter((item) => ensureCard("word", item).phase === state.homePhase);
-  els.homePhaseList.innerHTML = phaseWords.length
-    ? phaseWords.map((item) => {
-        const card = ensureCard("word", item);
-        return `
-          <article class="home-phase-word">
-            <strong>${item.nepali}</strong>
-            <span>${item.roman}</span>
-            <em>${item.german}</em>
-            <small>${dueLabel(card.nextDue)}</small>
-          </article>
-        `;
-      }).join("")
-    : `<p class="empty-phase">In Stufe ${state.homePhase} sind gerade keine Wörter.</p>`;
+  const phaseItems = phaseLearningItems(state.homePhase);
+  els.homePhaseList.innerHTML = phaseItems.length
+    ? phaseItems.map(phaseItemMarkup).join("")
+    : `<p class="empty-phase">In Stufe ${state.homePhase} sind gerade keine Inhalte.</p>`;
+}
+
+function phaseLearningItems(phase) {
+  return allLearningItems()
+    .filter(({ kind, item }) => ensureCard(kind, item).phase === phase)
+    .sort((a, b) => phaseKindOrder(a.kind, a.item) - phaseKindOrder(b.kind, b.item));
+}
+
+function phaseKindOrder(kind, item) {
+  if (kind === "letter") return 0;
+  if (kind === "word" && item.category === "Zahlen") return 1;
+  if (kind === "word") return 2;
+  return 3;
+}
+
+function phaseItemMarkup({ kind, item }) {
+  const card = ensureCard(kind, item);
+  const label = kind === "letter" ? "Buchstabe" : kind === "sentence" ? "Satz" : item.category === "Zahlen" ? "Zahl" : "Wort";
+  const main = kind === "letter" ? item.char : kind === "sentence" ? item.nepali : wordDisplayText(item);
+  const roman = kind === "letter" ? item.roman : item.roman;
+  const german = kind === "letter" ? item.sound : item.german;
+  return `
+    <article class="home-phase-word">
+      <small class="phase-kind">${label}</small>
+      <strong>${main}</strong>
+      <span>${roman}</span>
+      <em>${german}</em>
+      <small>${dueLabel(card.nextDue)}</small>
+    </article>
+  `;
 }
 
 function renderPhaseStrip(kind) {
@@ -1167,7 +1187,7 @@ function renderTeachSentenceStep(step) {
 }
 
 function renderWordRecognizeStep(step) {
-  const options = optionSet(words, step.item, "german", 4);
+  const options = optionSet(wordOptionPool(step.item), step.item, "german", 4);
   els.lessonStage.innerHTML = `
     ${lessonHeadingMarkup(step)}
     <div class="lesson-prompt-card">
@@ -1203,7 +1223,7 @@ function renderSentenceMeaningStep(step) {
 }
 
 function renderListenStep(step) {
-  const items = step.kind === "word" ? words : sentences;
+  const items = step.kind === "word" ? wordOptionPool(step.item) : sentences;
   const options = optionSet(items, step.item, "roman", 4);
   els.lessonStage.innerHTML = `
     ${lessonAudioControlMarkup(step)}
@@ -1296,6 +1316,7 @@ function bindLessonWritingCanvas() {
   const context = canvas.getContext("2d");
   let drawing = false;
   let previous = null;
+  let moved = false;
   context.lineWidth = 12;
   context.lineCap = "round";
   context.lineJoin = "round";
@@ -1310,7 +1331,9 @@ function bindLessonWritingCanvas() {
   };
   const drawPoint = (event) => {
     if (!drawing) return;
+    event.preventDefault();
     const next = point(event);
+    moved = true;
     context.beginPath();
     context.moveTo(previous.x, previous.y);
     context.lineTo(next.x, next.y);
@@ -1318,19 +1341,30 @@ function bindLessonWritingCanvas() {
     previous = next;
   };
   canvas.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
     drawing = true;
     previous = point(event);
+    moved = false;
     canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener("pointermove", drawPoint);
-  canvas.addEventListener("pointerup", () => {
+  canvas.addEventListener("pointerup", (event) => {
+    event.preventDefault();
+    if (drawing && previous && !moved) {
+      context.beginPath();
+      context.arc(previous.x, previous.y, context.lineWidth / 2, 0, Math.PI * 2);
+      context.fillStyle = context.strokeStyle;
+      context.fill();
+    }
     drawing = false;
     previous = null;
   });
-  canvas.addEventListener("pointercancel", () => {
+  canvas.addEventListener("pointercancel", (event) => {
+    event.preventDefault();
     drawing = false;
     previous = null;
   });
+  canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 }
 
 function clearLessonWritingCanvas() {
@@ -1423,9 +1457,9 @@ async function continueLesson() {
     if (!state.lesson.evaluated) {
       els.lessonContinueButton.disabled = true;
       evaluateLessonRun();
-      await playLevelUpSound();
       state.lesson.evaluated = true;
       renderLesson();
+      if (lessonRunStars(lessonRunSummary()) >= 2) await playLevelUpSound();
       return;
     }
     startLesson();
@@ -1489,6 +1523,7 @@ function recordLessonResult(step, correct) {
 
 function renderLessonCompleteStep() {
   const summary = lessonRunSummary();
+  const stars = lessonRunStars(summary);
   els.lessonContinueButton.textContent = state.lesson.evaluated ? "Neue Übung" : "Stufen aktualisieren";
   els.lessonStage.innerHTML = `
     <div class="lesson-complete">
@@ -1496,6 +1531,7 @@ function renderLessonCompleteStep() {
       <h2>${lessonCompleteTitle(summary)}</h2>
       <p>${lessonCompleteText(summary)}</p>
       ${state.lesson.evaluated ? `
+        <div class="lesson-stars" aria-label="${stars} von 3 Sternen">${renderStars(stars)}</div>
         <div class="lesson-summary-grid">
           <span><strong>${summary.passed}</strong> sicher gewusst</span>
           <span><strong>${summary.failed}</strong> nochmal üben</span>
@@ -1516,6 +1552,19 @@ function lessonRunSummary() {
     else summary.failed += 1;
     return summary;
   }, { passed: 0, failed: 0 });
+}
+
+function lessonRunStars(summary) {
+  const total = summary.passed + summary.failed;
+  if (!total || summary.passed === 0) return 0;
+  const ratio = summary.passed / total;
+  if (ratio === 1) return 3;
+  if (ratio >= 0.6) return 2;
+  return 1;
+}
+
+function renderStars(count) {
+  return [0, 1, 2].map((index) => `<span class="${index < count ? "filled" : ""}">★</span>`).join("");
 }
 
 function lessonUnits() {
@@ -1583,6 +1632,11 @@ function markLessonAnswers(correct) {
 function optionSet(items, correctItem, field, count) {
   const distractors = shuffle(items.filter((item) => item.id !== correctItem.id && item[field] !== correctItem[field])).slice(0, count - 1);
   return shuffle([correctItem, ...distractors]);
+}
+
+function wordOptionPool(correctItem) {
+  if (correctItem.category !== "Zahlen") return words;
+  return words.filter((item) => item.category === "Zahlen");
 }
 
 function shuffle(items) {
