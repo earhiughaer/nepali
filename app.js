@@ -67,6 +67,7 @@ let storeKey = baseStoreKey;
 const lessonRomanKey = "nepali-pwa-lesson-roman-v3";
 const soundKey = "nepali-pwa-sound-v1";
 const legacyStoreKey = "nepali-pwa-progress-v1";
+const lessonUnitGap = 4;
 const lessonRomanDefaults = {
   teachWord: true,
   teachSentence: true,
@@ -194,6 +195,8 @@ const els = {
   prevLetterButton: $("#prevLetterButton"),
   nextLetterButton: $("#nextLetterButton"),
   drawingLetterSelect: $("#drawingLetterSelect"),
+  prevDrawingButton: $("#prevDrawingButton"),
+  nextDrawingButton: $("#nextDrawingButton"),
   drawingCanvas: $("#drawingCanvas"),
   drawingTarget: $("#drawingTarget"),
   drawingMeta: $("#drawingMeta"),
@@ -383,8 +386,9 @@ function clampIndex(index, length) {
 }
 
 function filteredAlphabet() {
-  if (state.alphabetFilter === "all") return alphabet;
-  return alphabet.filter((item) => item.type === state.alphabetFilter);
+  const items = alphabetCardItems();
+  if (state.alphabetFilter === "all") return items;
+  return items.filter((item) => item.type === state.alphabetFilter);
 }
 
 function loadProgress() {
@@ -621,13 +625,22 @@ function renderDrawingSelect() {
   drawingItems().forEach((letter) => {
     const option = document.createElement("option");
     option.value = letter.id;
-    option.textContent = `${letter.char} · ${letter.roman}`;
+    option.textContent = letter.kind === "number" ? `Zahl: ${letter.german}` : `Buchstabe: ${letter.roman}`;
     els.drawingLetterSelect.append(option);
   });
 }
 
 function selectedDrawingLetter() {
   return drawingItems().find((letter) => letter.id === els.drawingLetterSelect.value) || drawingItems()[0];
+}
+
+function stepDrawing(delta) {
+  const items = drawingItems();
+  const currentIndex = Math.max(0, items.findIndex((item) => item.id === els.drawingLetterSelect.value));
+  const next = items[clampIndex(currentIndex + delta, items.length)];
+  els.drawingLetterSelect.value = next.id;
+  clearCanvas();
+  renderDrawingTarget();
 }
 
 function renderDrawingTarget() {
@@ -644,16 +657,28 @@ function renderDrawingTarget() {
 function drawingItems() {
   return [
     ...lessonLetters.map((letter) => ({ ...letter, kind: "letter" })),
-    ...words.filter((word) => word.category === "Zahlen").map((word) => ({
+    ...numberCardItems()
+  ];
+}
+
+function alphabetCardItems() {
+  return [
+    ...alphabet,
+    ...numberCardItems()
+  ];
+}
+
+function numberCardItems() {
+  return words.filter((word) => word.category === "Zahlen").map((word) => ({
       id: `number-${word.id}`,
       sourceId: word.id,
       char: nepaliNumberDigit(word),
       roman: word.roman,
       german: word.german,
       sound: word.german,
+      type: "number",
       kind: "number"
-    }))
-  ];
+    }));
 }
 
 function clearCanvas() {
@@ -760,7 +785,8 @@ function compareLessonWriting(targetChar) {
   if (!canvas || !bar || !copy) return;
   const score = drawingSimilarityScore(canvas, canvas.getContext("2d", { willReadFrequently: true }), targetChar);
   bar.style.width = `${score}%`;
-  copy.textContent = `${score}% Ähnlichkeit. Entscheide selbst, ob du es gewusst hast.`;
+  copy.textContent = `${score}% Ähnlichkeit.`;
+  $("#lessonWritingTarget")?.classList.remove("hidden");
 }
 
 function nearbyTargetInk(data, alphaIndex, width) {
@@ -952,7 +978,7 @@ function buildLessonSteps() {
 
   return [
     ...teachSteps,
-    ...interleaveLessonSteps(practiceQueues),
+    ...interleaveLessonSteps(practiceQueues, teachSteps),
     { type: "lessonComplete" }
   ];
 }
@@ -968,7 +994,35 @@ function pickLessonUnits() {
     dailyNewItems("sentence")[0] ? { kind: "sentence", item: dailyNewItems("sentence")[0], isNew: true } : null
   ].filter(Boolean);
   const neededNewCount = dueReview.length ? 1 : 3;
-  return uniqueLessonUnits([...dueReview, ...newUnits.slice(0, Math.max(neededNewCount, 3 - dueReview.length))]);
+  const selected = uniqueLessonUnits([...dueReview, ...newUnits.slice(0, Math.max(neededNewCount, 3 - dueReview.length))]);
+  return fillLessonUnits(selected, lessonUnitGap + 1);
+}
+
+function fillLessonUnits(units, minimumCount) {
+  const selected = uniqueLessonUnits(units);
+  const selectedKeys = new Set(selected.map((unit) => unitKey(unit.kind, unit.item)));
+  const candidates = allLearningItems()
+    .filter(({ kind, item }) => !selectedKeys.has(unitKey(kind, item)))
+    .filter(({ kind, item }) => kind !== "word" || !isNew(ensureCard(kind, item)))
+    .sort((a, b) => unitPriority(a) - unitPriority(b));
+  candidates.forEach((candidate) => {
+    if (selected.length >= minimumCount) return;
+    selected.push({
+      ...candidate,
+      isNew: isNew(ensureCard(candidate.kind, candidate.item))
+    });
+    selectedKeys.add(unitKey(candidate.kind, candidate.item));
+  });
+  return selected;
+}
+
+function unitPriority({ kind, item }) {
+  const card = ensureCard(kind, item);
+  if (isTodayDue(kind, item) && !isNew(card)) return 0;
+  if (!isNew(card)) return 1;
+  if (kind === "letter") return 2;
+  if (kind === "sentence") return 3;
+  return 4;
 }
 
 function pickNewUnit(kind) {
@@ -1023,29 +1077,28 @@ function lessonStep(type, kind, item, skill = null) {
   return { type, unit: unitKey(kind, item), kind, item, skill };
 }
 
-function interleaveLessonSteps(queues) {
+function interleaveLessonSteps(queues, initialSteps = []) {
   const openQueues = queues.filter((queue) => queue.length);
   const mixed = [];
+  const history = initialSteps.filter((step) => step.unit);
   let cursor = 0;
-  const preferredGap = 3;
   while (openQueues.some((queue) => queue.length)) {
     let queueIndex = -1;
     let stepIndex = 0;
-    for (let gap = preferredGap; gap >= 0 && queueIndex < 0; gap -= 1) {
-      for (let offset = 0; offset < openQueues.length; offset += 1) {
-        const index = (cursor + offset) % openQueues.length;
-        const queue = openQueues[index];
-        if (!queue.length) continue;
-        const candidateIndex = queue.findIndex((step) => !hasRecentUnit(mixed, step.unit, gap));
-        if (candidateIndex < 0) continue;
-        queueIndex = index;
-        stepIndex = candidateIndex;
-        break;
-      }
+    for (let offset = 0; offset < openQueues.length; offset += 1) {
+      const index = (cursor + offset) % openQueues.length;
+      const queue = openQueues[index];
+      if (!queue.length) continue;
+      const candidateIndex = queue.findIndex((step) => !hasRecentUnit([...history, ...mixed], step.unit, lessonUnitGap));
+      if (candidateIndex < 0) continue;
+      queueIndex = index;
+      stepIndex = candidateIndex;
+      break;
     }
     if (queueIndex < 0) {
-      queueIndex = openQueues.findIndex((candidate) => candidate.length);
-      stepIndex = 0;
+      const best = bestFallbackStep(openQueues, [...history, ...mixed], cursor);
+      queueIndex = best.queueIndex;
+      stepIndex = best.stepIndex;
     }
     const queue = openQueues[queueIndex];
     mixed.push(queue.splice(stepIndex, 1)[0]);
@@ -1054,9 +1107,29 @@ function interleaveLessonSteps(queues) {
   return mixed;
 }
 
+function bestFallbackStep(queues, history, cursor) {
+  let best = { queueIndex: queues.findIndex((queue) => queue.length), stepIndex: 0, distance: -1 };
+  queues.forEach((queue, queueIndex) => {
+    if (!queue.length) return;
+    queue.forEach((step, stepIndex) => {
+      const distance = distanceSinceUnit(history, step.unit);
+      const cursorBonus = queueIndex >= cursor ? 0.1 : 0;
+      if (distance + cursorBonus > best.distance) best = { queueIndex, stepIndex, distance: distance + cursorBonus };
+    });
+  });
+  return best;
+}
+
 function hasRecentUnit(steps, unit, gap) {
   if (gap <= 0) return false;
   return steps.slice(-gap).some((step) => step.unit === unit);
+}
+
+function distanceSinceUnit(steps, unit) {
+  for (let index = steps.length - 1; index >= 0; index -= 1) {
+    if (steps[index].unit === unit) return steps.length - index - 1;
+  }
+  return Number.MAX_SAFE_INTEGER;
 }
 
 function unitKey(kind, item) {
@@ -1204,6 +1277,16 @@ function audioIcon() {
   `;
 }
 
+function mutedAudioIcon() {
+  return `
+    <svg class="audio-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 9.5v5h3.3L12 18.2V5.8L7.3 9.5H4z"></path>
+      <path d="M18.5 9l-5 5"></path>
+      <path d="M13.5 9l5 5"></path>
+    </svg>
+  `;
+}
+
 function renderTeachLetterStep(step) {
   els.lessonStage.innerHTML = `
     ${lessonHeadingMarkup(step)}
@@ -1245,7 +1328,10 @@ function renderLetterWriteStep(step) {
     ${lessonHeadingMarkup(step)}
     <div class="lesson-writing lesson-writing-full">
       <p class="writing-prompt">Schreibe: <strong>${step.item.roman}</strong></p>
-      <canvas class="lesson-canvas" id="lessonWritingCanvas" width="520" height="520" aria-label="Buchstaben zeichnen"></canvas>
+      <div class="lesson-canvas-wrap">
+        <canvas class="lesson-canvas" id="lessonWritingCanvas" width="520" height="520" aria-label="Buchstaben zeichnen"></canvas>
+        <div class="lesson-canvas-target hidden" id="lessonWritingTarget">${step.item.char}</div>
+      </div>
       <div class="recall-answer writing-answer hidden" id="lessonLetterAnswer">
         <strong>${step.item.char}</strong>
         ${romanLine(step.item, step)}
@@ -1267,6 +1353,7 @@ function renderLetterWriteStep(step) {
   bindLessonSelfCheck();
   $("#lessonCompareWritingButton").addEventListener("click", () => compareLessonWriting(step.item.char));
   $("#lessonShowLetterButton").addEventListener("click", () => {
+    $("#lessonWritingTarget").classList.remove("hidden");
     $("#lessonLetterAnswer").classList.remove("hidden");
     playItem(step.item);
   });
@@ -1279,7 +1366,10 @@ function renderWordWriteStep(step) {
     ${lessonHeadingMarkup(step)}
     <div class="lesson-writing lesson-writing-full">
       <p class="writing-prompt">Schreibe: <strong>${step.item.german}</strong></p>
-      <canvas class="lesson-canvas" id="lessonWritingCanvas" width="520" height="360" aria-label="Zahlwort zeichnen"></canvas>
+      <div class="lesson-canvas-wrap">
+        <canvas class="lesson-canvas" id="lessonWritingCanvas" width="520" height="360" aria-label="Zahl zeichnen"></canvas>
+        <div class="lesson-canvas-target hidden" id="lessonWritingTarget">${digit}</div>
+      </div>
       <div class="recall-answer writing-answer word-writing-answer hidden" id="lessonLetterAnswer">
         <strong>${digit}</strong>
       </div>
@@ -1300,6 +1390,7 @@ function renderWordWriteStep(step) {
   bindLessonSelfCheck();
   $("#lessonCompareWritingButton").addEventListener("click", () => compareLessonWriting(digit));
   $("#lessonShowLetterButton").addEventListener("click", () => {
+    $("#lessonWritingTarget").classList.remove("hidden");
     $("#lessonLetterAnswer").classList.remove("hidden");
   });
   $("#lessonClearCanvasButton").addEventListener("click", clearLessonWritingCanvas);
@@ -1938,7 +2029,8 @@ function prepareCorrectSound() {
 
 function renderSoundButton() {
   if (!els.lessonSoundButton) return;
-  els.lessonSoundButton.textContent = state.soundEnabled ? "Ton an" : "Ton aus";
+  els.lessonSoundButton.innerHTML = state.soundEnabled ? audioIcon() : mutedAudioIcon();
+  els.lessonSoundButton.setAttribute("aria-label", state.soundEnabled ? "Ton an" : "Ton aus");
   els.lessonSoundButton.setAttribute("aria-pressed", String(state.soundEnabled));
 }
 
@@ -2074,6 +2166,8 @@ function bindEvents() {
     clearCanvas();
     renderDrawingTarget();
   });
+  els.prevDrawingButton.addEventListener("click", () => stepDrawing(-1));
+  els.nextDrawingButton.addEventListener("click", () => stepDrawing(1));
   els.drawingCanvas.addEventListener("pointerdown", startDrawing);
   els.drawingCanvas.addEventListener("pointermove", draw);
   els.drawingCanvas.addEventListener("pointerup", stopDrawing);

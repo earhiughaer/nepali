@@ -19,12 +19,18 @@
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+  background: #ecfeff;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
   background:
     linear-gradient(180deg, #ecfeff 0, var(--paper) 280px),
     var(--paper);
+  background-attachment: fixed;
   color: var(--ink);
 }
 
@@ -181,7 +187,7 @@ body[data-view="lesson"] .topbar {
 }
 
 body[data-view="lesson"] .app-shell {
-  padding-top: max(54px, calc(env(safe-area-inset-top) + 18px));
+  padding-top: max(34px, calc(env(safe-area-inset-top) + 8px));
 }
 
 .section-heading {
@@ -307,6 +313,25 @@ body[data-view="lesson"] .app-shell {
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.sound-circle-button {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(51, 72, 85, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--ink);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.sound-circle-button .audio-icon {
+  width: 24px;
+  height: 24px;
 }
 
 .lesson-intro-card,
@@ -549,6 +574,29 @@ body[data-view="lesson"] .app-shell {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+}
+
+.lesson-canvas-wrap {
+  position: relative;
+  overflow: hidden;
+  width: min(100%, 520px);
+  border-radius: 8px;
+}
+
+.lesson-canvas-wrap .lesson-canvas {
+  width: 100%;
+}
+
+.lesson-canvas-target {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(162, 59, 81, 0.28);
+  font-family: Georgia, "Noto Serif Devanagari", "Kohinoor Devanagari", serif;
+  font-size: min(60vw, 18rem);
+  line-height: 0.9;
+  pointer-events: none;
 }
 
 .lesson-score-meter {
@@ -1015,6 +1063,17 @@ body[data-view="lesson"] .app-shell {
   box-shadow: var(--shadow);
   aspect-ratio: 1;
   touch-action: none;
+}
+
+.drawing-picker {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: 8px;
+  align-items: center;
+}
+
+.drawing-picker select {
+  width: 100%;
 }
 
 canvas {
@@ -1746,10 +1805,6 @@ main {
 
 #lessonSoundButton {
   justify-self: end;
-  min-width: 86px;
-  border-color: var(--line);
-  background: white;
-  color: var(--ink);
 }
 
 .lesson-feedback:not(.hidden) {

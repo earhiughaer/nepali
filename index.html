@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#f7fafc">
+    <meta name="theme-color" content="#ecfeff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Nepali">
     <title>Nepali Lernen</title>
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="icons/icon.png">
-    <link rel="stylesheet" href="styles.css?v=33">
+    <link rel="stylesheet" href="styles.css?v=35">
   </head>
   <body>
     <div class="app-shell">
@@ -69,7 +69,7 @@
               <span>Inhalte je Stufe ansehen</span>
             </button>
             <button class="home-card" data-view="alphabet" type="button">
-              <strong>Alphabet</strong>
+              <strong>Alphabet & Zahlen</strong>
               <span>Karten manuell ansehen</span>
             </button>
           </div>
@@ -94,7 +94,7 @@
             <div class="lesson-mini-top">
               <button class="lesson-exit-button" id="lessonExitButton" type="button" aria-label="Lektion schließen">×</button>
               <span id="lessonPathMeta">Stufe 1</span>
-              <button class="secondary-button" id="lessonSoundButton" type="button">Ton an</button>
+              <button class="sound-circle-button" id="lessonSoundButton" type="button" aria-label="Ton an"></button>
             </div>
             <h2 class="lesson-current-title" id="lessonPathTitle">Üben</h2>
             <div class="lesson-progress" aria-label="Übungsfortschritt">
@@ -110,12 +110,13 @@
           <div class="section-heading">
             <div>
               <p class="eyebrow">Devanagari</p>
-              <h2>Alphabet-Karteikarten</h2>
+              <h2>Alphabet und Zahlen</h2>
             </div>
             <div class="segmented" role="group" aria-label="Zeichengruppe">
               <button class="segment active" data-alphabet-filter="all">Alle</button>
               <button class="segment" data-alphabet-filter="vowel">Vokale</button>
               <button class="segment" data-alphabet-filter="consonant">Konsonanten</button>
+              <button class="segment" data-alphabet-filter="number">Zahlen</button>
             </div>
           </div>
           <div class="flashcard-stage">
@@ -140,7 +141,11 @@
               <p class="eyebrow">Schreibtraining</p>
               <h2>Erst zeichnen, dann vergleichen</h2>
             </div>
-            <select id="drawingLetterSelect" aria-label="Zeichen oder Zahl auswählen"></select>
+            <div class="drawing-picker">
+              <button class="round-button" id="prevDrawingButton" type="button" aria-label="Vorheriges Zeichen">‹</button>
+              <select id="drawingLetterSelect" aria-label="Zeichen oder Zahl auswählen"></select>
+              <button class="round-button" id="nextDrawingButton" type="button" aria-label="Nächstes Zeichen">›</button>
+            </div>
           </div>
           <div class="drawing-layout">
             <div class="canvas-wrap">
@@ -258,7 +263,7 @@
       </main>
     </div>
 
-    <script src="content.js?v=33" defer></script>
-    <script src="app.js?v=33" defer></script>
+    <script src="content.js?v=35" defer></script>
+    <script src="app.js?v=35" defer></script>
   </body>
 </html>
