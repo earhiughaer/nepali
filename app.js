@@ -135,6 +135,7 @@ const state = {
   recordingChunks: [],
   drawingCompared: false,
   activeAudio: null,
+  correctSound: null,
   soundEnabled: true,
   lessonRoman: { ...lessonRomanDefaults },
   lesson: {
@@ -729,6 +730,7 @@ function reviewItem(kind, item, correct) {
 }
 
 function startLesson() {
+  prepareCorrectSound();
   const steps = buildLessonSteps();
   state.lesson = {
     index: 0,
@@ -883,6 +885,7 @@ function renderLesson() {
   els.lessonProgressBar.style.width = `${Math.round((state.lesson.index / total) * 100)}%`;
   els.lessonFeedback.className = "lesson-feedback hidden";
   els.lessonFeedback.textContent = "";
+  els.lessonContinueButton.classList.remove("is-hidden-until-ready");
   els.lessonContinueButton.disabled = false;
   els.lessonContinueButton.textContent = step ? lessonButtonText(step) : "Neue Übung";
   if (!step) {
@@ -1250,6 +1253,7 @@ function renderRecallStep(step) {
     $("#revealRecallButton").disabled = true;
     playItem(step.item);
   });
+  els.lessonContinueButton.classList.add("is-hidden-until-ready");
   bindLessonSelfCheck();
 }
 
@@ -1260,6 +1264,7 @@ function bindLessonSelfCheck() {
       els.lessonStage.querySelectorAll("[data-self-check]").forEach((item) => item.classList.remove("selected"));
       button.classList.add("selected");
       state.lesson.selected = [button];
+      els.lessonContinueButton.classList.remove("is-hidden-until-ready");
       els.lessonContinueButton.disabled = false;
     });
   });
@@ -1422,7 +1427,7 @@ function checkLessonAnswer(step) {
     correct = state.lesson.selected[0]?.dataset.correct === "true";
   }
   state.lesson.checked = true;
-  playAnswerAfterCheckIfNeeded(step);
+  stopActiveAudio();
   recordLessonResult(step, correct);
   if (correct) playCorrectSound();
   if (isSelfCheckStep(step)) {
@@ -1432,7 +1437,7 @@ function checkLessonAnswer(step) {
       showLessonFeedback("wrong", "Leider nicht gewusst", randomCopy("recallWrong"));
     }
   } else if (correct) {
-    showLessonFeedback("correct", "Richtig!", randomCopy("correct"));
+    showLessonFeedback("correct", "Richtig!", correctFeedbackText(step));
   } else {
     showLessonFeedback("wrong", "Leider falsch", correctAnswerText(step));
   }
@@ -1444,16 +1449,9 @@ function checkLessonAnswer(step) {
   els.lessonFeedback.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
-function playAnswerAfterCheckIfNeeded(step) {
-  if (step.type === "sentenceMeaning") {
-    playItem(step.item);
-    return;
-  }
-  if (shouldShowRoman(step)) return;
-  if (step.type !== "wordRecognize") return;
-  const selectedId = state.lesson.selected[0]?.dataset.itemId;
-  const item = words.find((candidate) => candidate.id === selectedId);
-  if (item) playItem(item);
+function correctFeedbackText(step) {
+  if (step.type === "wordListen" || step.type === "sentenceListen") return step.item.german;
+  return randomCopy("correct");
 }
 
 function randomCopy(kind) {
@@ -1540,7 +1538,7 @@ function showLessonFeedback(status, title, text) {
 }
 
 function correctAnswerText(step) {
-  if (step.type === "sentenceBuild" || step.type === "sentenceMeaning" || step.type === "sentenceListen") {
+  if (step.type === "sentenceBuild" || step.type === "sentenceMeaning" || step.type === "sentenceListen" || step.type === "wordListen") {
     return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-text">${step.item.german}</span>`;
   }
   if (step.kind === "letter") {
@@ -1619,10 +1617,7 @@ function renderCurrentPhrase() {
 
 async function playItem(item, visible = false) {
   if (!state.soundEnabled) return;
-  if (state.activeAudio) {
-    state.activeAudio.pause();
-    state.activeAudio = null;
-  }
+  stopActiveAudio();
   if (item.audio) {
     try {
       const player = visible ? els.nativePlayback : new Audio();
@@ -1643,12 +1638,29 @@ async function playItem(item, visible = false) {
 async function playCorrectSound() {
   if (!state.soundEnabled) return;
   try {
-    const player = new Audio("bling.mp3");
+    const player = state.correctSound || new Audio("bling.mp3");
+    state.correctSound = player;
+    player.pause();
     player.currentTime = 0;
     await player.play();
   } catch {
     // The browser can block short effects in some autoplay states; the answer still counts.
   }
+}
+
+function stopActiveAudio() {
+  if (state.activeAudio) {
+    state.activeAudio.pause();
+    state.activeAudio = null;
+  }
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+}
+
+function prepareCorrectSound() {
+  if (state.correctSound) return;
+  state.correctSound = new Audio("bling.mp3");
+  state.correctSound.preload = "auto";
+  state.correctSound.load();
 }
 
 function renderSoundButton() {

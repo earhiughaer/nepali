@@ -595,7 +595,7 @@ body[data-view="lesson"] .app-shell {
 }
 
 .writing-answer strong {
-  font-size: clamp(5rem, 18vw, 9rem);
+  font-size: clamp(7rem, 26vw, 13rem);
   line-height: 0.95;
 }
 
@@ -759,6 +759,10 @@ body[data-view="lesson"] .app-shell {
   color: white;
   font-size: 1.8rem;
   font-weight: 900;
+}
+
+.lesson-continue.is-hidden-until-ready {
+  display: none;
 }
 
 .lesson-continue:disabled {
