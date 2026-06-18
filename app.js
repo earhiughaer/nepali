@@ -68,6 +68,67 @@ const lessonRomanKey = "nepali-pwa-lesson-roman-v3";
 const soundKey = "nepali-pwa-sound-v1";
 const legacyStoreKey = "nepali-pwa-progress-v1";
 const lessonUnitGap = 4;
+const letterAudioByChar = {
+  "अ": "alphabet/vowels/01_a_अ.mp3",
+  "आ": "alphabet/vowels/02_aa_आ.mp3",
+  "इ": "alphabet/vowels/03_i_इ.mp3",
+  "ई": "alphabet/vowels/04_ii_ई.mp3",
+  "उ": "alphabet/vowels/05_u_उ.mp3",
+  "ऊ": "alphabet/vowels/06_uu_ऊ.mp3",
+  "ऋ": "alphabet/vowels/07_ri_ऋ.mp3",
+  "ए": "alphabet/vowels/08_e_ए.mp3",
+  "ऐ": "alphabet/vowels/09_ai_ऐ.mp3",
+  "ओ": "alphabet/vowels/10_o_ओ.mp3",
+  "औ": "alphabet/vowels/11_au_औ.mp3",
+  "क": "alphabet/letters/01_ka_क.mp3",
+  "ख": "alphabet/letters/02_kha_ख.mp3",
+  "ग": "alphabet/letters/03_ga_ग.mp3",
+  "घ": "alphabet/letters/04_gha_घ.mp3",
+  "ङ": "alphabet/letters/05_nga_ङ.mp3",
+  "च": "alphabet/letters/06_tscha_च.mp3",
+  "छ": "alphabet/letters/07_tschha_छ.mp3",
+  "ज": "alphabet/letters/08_dscha_ज.mp3",
+  "झ": "alphabet/letters/09_dschha_झ.mp3",
+  "ञ": "alphabet/letters/10_nja_ञ.mp3",
+  "ट": "alphabet/letters/11_ta_retroflex_ट.mp3",
+  "ठ": "alphabet/letters/12_tha_retroflex_ठ.mp3",
+  "ड": "alphabet/letters/13_da_retroflex_ड.mp3",
+  "ढ": "alphabet/letters/14_dha_retroflex_ढ.mp3",
+  "ण": "alphabet/letters/15_na_retroflex_ण.mp3",
+  "त": "alphabet/letters/16_ta_त.mp3",
+  "थ": "alphabet/letters/17_tha_थ.mp3",
+  "द": "alphabet/letters/18_da_द.mp3",
+  "ध": "alphabet/letters/19_dha_ध.mp3",
+  "न": "alphabet/letters/20_na_न.mp3",
+  "प": "alphabet/letters/21_pa_प.mp3",
+  "फ": "alphabet/letters/22_pha_फ.mp3",
+  "ब": "alphabet/letters/23_ba_ब.mp3",
+  "भ": "alphabet/letters/24_bha_भ.mp3",
+  "म": "alphabet/letters/25_ma_म.mp3",
+  "य": "alphabet/letters/26_ja_य.mp3",
+  "र": "alphabet/letters/27_ra_र.mp3",
+  "ल": "alphabet/letters/28_la_ल.mp3",
+  "व": "alphabet/letters/29_wa_व.mp3",
+  "श": "alphabet/letters/30_scha_श.mp3",
+  "ष": "alphabet/letters/31_scha_retroflex_ष.mp3",
+  "स": "alphabet/letters/32_sa_स.mp3",
+  "ह": "alphabet/letters/33_ha_ह.mp3",
+  "क्ष": "alphabet/letters/34_kscha_क्ष.mp3",
+  "त्र": "alphabet/letters/35_tra_त्र.mp3",
+  "ज्ञ": "alphabet/letters/36_gya_ज्ञ.mp3"
+};
+const numberAudioByDigit = {
+  "०": "alphabet/numbers/00_sunja_०.mp3",
+  "१": "alphabet/numbers/01_ek_१.mp3",
+  "२": "alphabet/numbers/02_dui_२.mp3",
+  "३": "alphabet/numbers/03_tin_३.mp3",
+  "४": "alphabet/numbers/04_tschar_४.mp3",
+  "५": "alphabet/numbers/05_pantsch_५.mp3",
+  "६": "alphabet/numbers/06_tschha_६.mp3",
+  "७": "alphabet/numbers/07_sat_७.mp3",
+  "८": "alphabet/numbers/08_aath_८.mp3",
+  "९": "alphabet/numbers/09_nau_९.mp3"
+};
 const lessonRomanDefaults = {
   teachWord: true,
   teachSentence: true,
@@ -98,6 +159,15 @@ const lessonTypeLabels = {
   sentenceListen: "Satz hören",
   sentenceRecall: "Satz erinnern"
 };
+
+alphabet.forEach((item) => {
+  if (letterAudioByChar[item.char]) item.audio = letterAudioByChar[item.char];
+});
+
+words.forEach((item) => {
+  const digit = nepaliNumberDigit(item);
+  if (numberAudioByDigit[digit]) item.audio = numberAudioByDigit[digit];
+});
 const feedbackCopy = {
   correct: [
     "Sehr gut, das sitzt!",
@@ -676,6 +746,7 @@ function numberCardItems() {
       roman: word.roman,
       german: word.german,
       sound: word.german,
+      audio: numberAudioByDigit[nepaliNumberDigit(word)] || word.audio,
       type: "number",
       kind: "number"
     }));

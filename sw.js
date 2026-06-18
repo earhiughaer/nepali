@@ -1,11 +1,11 @@
-const cacheName = "nepali-pwa-v35";
+const cacheName = "nepali-pwa-v37";
 const runtimeCacheName = "nepali-pwa-runtime-v33";
 const assets = [
   ".",
   "index.html",
-  "styles.css?v=35",
-  "content.js?v=35",
-  "app.js?v=35",
+  "styles.css?v=37",
+  "content.js?v=37",
+  "app.js?v=37",
   "bling.mp3",
   "fanfaren.mp3",
   "manifest.webmanifest",
@@ -28,7 +28,7 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-  if (event.request.url.includes("/audio/")) {
+  if (event.request.url.includes("/audio/") || event.request.url.includes("/alphabet/")) {
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
