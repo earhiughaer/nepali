@@ -136,6 +136,7 @@ const state = {
   drawingCompared: false,
   activeAudio: null,
   correctSound: null,
+  levelUpSound: null,
   soundEnabled: true,
   lessonRoman: { ...lessonRomanDefaults },
   lesson: {
@@ -1086,14 +1087,14 @@ function renderLetterWriteStep(step) {
 }
 
 function renderWordWriteStep(step) {
+  const digit = nepaliNumberDigit(step.item);
   els.lessonStage.innerHTML = `
     ${lessonHeadingMarkup(step)}
     <div class="lesson-writing lesson-writing-full">
       <p class="writing-prompt">Schreibe: <strong>${step.item.german}</strong></p>
       <canvas class="lesson-canvas" id="lessonWritingCanvas" width="520" height="360" aria-label="Zahlwort zeichnen"></canvas>
       <div class="recall-answer writing-answer word-writing-answer hidden" id="lessonLetterAnswer">
-        <strong>${step.item.nepali}</strong>
-        ${romanLine(step.item, step)}
+        <strong>${digit}</strong>
       </div>
       <div class="lesson-writing-tools">
         <button class="secondary-button" id="lessonShowLetterButton">Zahl anzeigen</button>
@@ -1109,9 +1110,24 @@ function renderWordWriteStep(step) {
   bindLessonSelfCheck();
   $("#lessonShowLetterButton").addEventListener("click", () => {
     $("#lessonLetterAnswer").classList.remove("hidden");
-    playItem(step.item);
   });
   $("#lessonClearCanvasButton").addEventListener("click", clearLessonWritingCanvas);
+}
+
+function nepaliNumberDigit(item) {
+  const digits = {
+    ek: "१",
+    dui: "२",
+    tin: "३",
+    char: "४",
+    panch: "५",
+    chha_number: "६",
+    sat: "७",
+    aath: "८",
+    nau: "९",
+    das: "१०"
+  };
+  return digits[item.id] || item.nepali;
 }
 
 function renderTeachWordStep(step) {
@@ -1387,7 +1403,7 @@ function renderBuildSlots(correctWords) {
   });
 }
 
-function continueLesson() {
+async function continueLesson() {
   const step = state.lesson.steps[state.lesson.index];
   if (!step) {
     startLesson();
@@ -1400,7 +1416,9 @@ function continueLesson() {
   }
   if (step.type === "lessonComplete") {
     if (!state.lesson.evaluated) {
+      els.lessonContinueButton.disabled = true;
       evaluateLessonRun();
+      await playLevelUpSound();
       state.lesson.evaluated = true;
       renderLesson();
       return;
@@ -1472,10 +1490,12 @@ function renderLessonCompleteStep() {
       <p class="lesson-kicker">${state.lesson.evaluated ? "Bewertet" : "Auswertung"}</p>
       <h2>${lessonCompleteTitle(summary)}</h2>
       <p>${lessonCompleteText(summary)}</p>
-      <div class="lesson-summary-grid">
-        <span><strong>${summary.passed}</strong> sicher gewusst</span>
-        <span><strong>${summary.failed}</strong> nochmal üben</span>
-      </div>
+      ${state.lesson.evaluated ? `
+        <div class="lesson-summary-grid">
+          <span><strong>${summary.passed}</strong> sicher gewusst</span>
+          <span><strong>${summary.failed}</strong> nochmal üben</span>
+        </div>
+      ` : ""}
     </div>
   `;
 }
@@ -1648,6 +1668,24 @@ async function playCorrectSound() {
   }
 }
 
+async function playLevelUpSound() {
+  if (!state.soundEnabled) return;
+  try {
+    const player = state.levelUpSound || new Audio("levelup.wav");
+    state.levelUpSound = player;
+    player.pause();
+    player.currentTime = 0;
+    const finished = new Promise((resolve) => {
+      player.addEventListener("ended", resolve, { once: true });
+      player.addEventListener("error", resolve, { once: true });
+    });
+    await player.play();
+    await finished;
+  } catch {
+    // levelup.wav is optional; if it is missing or blocked, the evaluation still works.
+  }
+}
+
 function stopActiveAudio() {
   if (state.activeAudio) {
     state.activeAudio.pause();
@@ -1661,6 +1699,11 @@ function prepareCorrectSound() {
   state.correctSound = new Audio("bling.mp3");
   state.correctSound.preload = "auto";
   state.correctSound.load();
+  if (!state.levelUpSound) {
+    state.levelUpSound = new Audio("levelup.wav");
+    state.levelUpSound.preload = "auto";
+    state.levelUpSound.load();
+  }
 }
 
 function renderSoundButton() {

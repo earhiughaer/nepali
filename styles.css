@@ -595,12 +595,12 @@ body[data-view="lesson"] .app-shell {
 }
 
 .writing-answer strong {
-  font-size: clamp(7rem, 26vw, 13rem);
+  font-size: clamp(9rem, 34vw, 17rem);
   line-height: 0.95;
 }
 
 .word-writing-answer strong {
-  font-size: clamp(3.6rem, 13vw, 6.8rem);
+  font-size: clamp(9rem, 34vw, 17rem);
 }
 
 .recall-card {
@@ -1699,6 +1699,14 @@ main {
 
 #lessonPathMeta {
   justify-self: start;
+}
+
+#lessonSoundButton {
+  justify-self: end;
+  min-width: 86px;
+  border-color: var(--line);
+  background: white;
+  color: var(--ink);
 }
 
 .lesson-feedback:not(.hidden) {
