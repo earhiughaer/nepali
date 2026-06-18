@@ -936,7 +936,7 @@ function lessonTitle(step) {
     wordRecall: "Wie heißt das Wort auf Nepali?",
     wordListen: "Was hast du gehört?",
     teachSentence: "Neuer Satz",
-    sentenceMeaning: "Wähle die passende Bedeutung",
+    sentenceMeaning: "Was ist die richtige Antwort?",
     sentenceBuild: "Übersetze diesen Satz",
     sentenceListen: "Was hast du gehört?",
     sentenceRecall: "Erinnere dich an den Nepali-Satz",
@@ -1000,7 +1000,7 @@ function shouldShowRoman(step) {
 }
 
 function canToggleRoman(step) {
-  return !["letterRecognize", "letterWrite", "wordWrite"].includes(step.type);
+  return !["letterRecognize", "letterWrite", "wordWrite", "sentenceMeaning"].includes(step.type);
 }
 
 function romanLine(item, step) {
@@ -1057,6 +1057,7 @@ function renderLetterWriteStep(step) {
   els.lessonStage.innerHTML = `
     ${lessonHeadingMarkup(step)}
     <div class="lesson-writing lesson-writing-full">
+      <p class="writing-prompt">Schreibe: <strong>${step.item.roman}</strong></p>
       <canvas class="lesson-canvas" id="lessonWritingCanvas" width="520" height="520" aria-label="Buchstaben zeichnen"></canvas>
       <div class="recall-answer writing-answer hidden" id="lessonLetterAnswer">
         <strong>${step.item.char}</strong>
@@ -1085,6 +1086,7 @@ function renderWordWriteStep(step) {
   els.lessonStage.innerHTML = `
     ${lessonHeadingMarkup(step)}
     <div class="lesson-writing lesson-writing-full">
+      <p class="writing-prompt">Schreibe: <strong>${step.item.german}</strong></p>
       <canvas class="lesson-canvas" id="lessonWritingCanvas" width="520" height="360" aria-label="Zahlwort zeichnen"></canvas>
       <div class="recall-answer writing-answer word-writing-answer hidden" id="lessonLetterAnswer">
         <strong>${step.item.nepali}</strong>
@@ -1244,6 +1246,8 @@ function renderRecallStep(step) {
   $("#revealRecallButton").addEventListener("click", () => {
     $("#recallAnswer").classList.remove("hidden");
     $("#recallActions").classList.remove("hidden");
+    $("#revealRecallButton").classList.add("revealed");
+    $("#revealRecallButton").disabled = true;
     playItem(step.item);
   });
   bindLessonSelfCheck();
@@ -1420,6 +1424,7 @@ function checkLessonAnswer(step) {
   state.lesson.checked = true;
   playAnswerAfterCheckIfNeeded(step);
   recordLessonResult(step, correct);
+  if (correct) playCorrectSound();
   if (isSelfCheckStep(step)) {
     if (correct) {
       showLessonFeedback("correct", "Gut erinnert!", randomCopy("recallCorrect"));
@@ -1633,6 +1638,17 @@ async function playItem(item, visible = false) {
     }
   }
   speak(item.nepali || item.char);
+}
+
+async function playCorrectSound() {
+  if (!state.soundEnabled) return;
+  try {
+    const player = new Audio("bling.mp3");
+    player.currentTime = 0;
+    await player.play();
+  } catch {
+    // The browser can block short effects in some autoplay states; the answer still counts.
+  }
 }
 
 function renderSoundButton() {
