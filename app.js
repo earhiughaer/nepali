@@ -851,7 +851,24 @@ function drawingSimilarityScore(canvas, context, targetChar) {
 }
 
 function compareLessonWriting(targetChar) {
-  $("#lessonWritingTarget")?.classList.remove("hidden");
+  const canvas = $("#lessonWritingCanvas");
+  const target = $("#lessonWritingTarget");
+  const answer = $("#lessonLetterAnswer");
+  const button = $("#lessonCompareWritingButton");
+  if (!canvas || !target || !answer || !button) return;
+  const shouldShow = canvasHasInk(canvas) || target.classList.contains("hidden");
+  target.classList.toggle("hidden", !shouldShow);
+  answer.classList.toggle("hidden", !shouldShow);
+  button.classList.toggle("active", shouldShow);
+  button.textContent = shouldShow ? "Ausblenden" : "Vergleichen";
+}
+
+function canvasHasInk(canvas) {
+  const data = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+  for (let index = 3; index < data.length; index += 16) {
+    if (data[index] > 20) return true;
+  }
+  return false;
 }
 
 function nearbyTargetInk(data, alphaIndex, width) {
@@ -1049,18 +1066,34 @@ function buildLessonSteps() {
 }
 
 function pickLessonUnits() {
-  const dueReview = todayDueLearningItems().filter(({ kind, item }) => {
-    const card = ensureCard(kind, item);
-    return !isNew(card);
-  });
-  const newUnits = [
-    dailyNewItems("letter")[0] ? { kind: "letter", item: dailyNewItems("letter")[0], isNew: true } : null,
-    dailyNewItems("word")[0] ? { kind: "word", item: dailyNewItems("word")[0], isNew: true } : null,
-    dailyNewItems("sentence")[0] ? { kind: "sentence", item: dailyNewItems("sentence")[0], isNew: true } : null
-  ].filter(Boolean);
-  const neededNewCount = dueReview.length ? 1 : 3;
-  const selected = uniqueLessonUnits([...dueReview, ...newUnits.slice(0, Math.max(neededNewCount, 3 - dueReview.length))]);
-  return fillLessonUnits(selected, lessonUnitGap + 1);
+  const normalWords = words.filter((item) => item.category !== "Zahlen");
+  const numberWords = words.filter((item) => item.category === "Zahlen");
+  return uniqueLessonUnits([
+    ...pickLessonGroup("word", normalWords, 4),
+    ...pickLessonGroup("sentence", sentences, 4),
+    ...pickScriptLessonGroup(numberWords)
+  ]);
+}
+
+function pickLessonGroup(kind, items, count) {
+  return uniqueItems([
+    ...items.filter((item) => isDue(ensureCard(kind, item)) && !isNew(ensureCard(kind, item))),
+    ...items.filter((item) => isDue(ensureCard(kind, item)) && isNew(ensureCard(kind, item))),
+    ...items.filter((item) => !isNew(ensureCard(kind, item))),
+    ...items
+  ])
+    .slice(0, count)
+    .map((item) => ({ kind, item, isNew: isNew(ensureCard(kind, item)) }));
+}
+
+function pickScriptLessonGroup(numberWords) {
+  const dueLetters = lessonLetters.filter((item) => isDue(ensureCard("letter", item)) && !isNew(ensureCard("letter", item)));
+  const dueNumbers = numberWords.filter((item) => isDue(ensureCard("word", item)) && !isNew(ensureCard("word", item)));
+  if (dueNumbers.length > dueLetters.length) return pickLessonGroup("word", numberWords, 4);
+  if (dueLetters.length || lessonLetters.some((item) => isNew(ensureCard("letter", item)))) {
+    return pickLessonGroup("letter", lessonLetters, 4);
+  }
+  return pickLessonGroup("word", numberWords, 4);
 }
 
 function fillLessonUnits(units, minimumCount) {
@@ -1421,14 +1454,13 @@ function renderLetterWriteStep(step) {
   `;
   bindLessonWritingCanvas();
   bindLessonSelfCheck();
-  $("#lessonCompareWritingButton").addEventListener("click", () => {
-    compareLessonWriting(step.item.char);
-    playItem(step.item);
-  });
+  $("#lessonCompareWritingButton").addEventListener("click", () => compareLessonWriting(step.item.char));
   $("#lessonPlayWritingAudioButton").addEventListener("click", () => playItem(step.item));
   $("#lessonShowLetterButton").addEventListener("click", () => {
     $("#lessonWritingTarget").classList.remove("hidden");
     $("#lessonLetterAnswer").classList.remove("hidden");
+    $("#lessonCompareWritingButton").classList.add("active");
+    $("#lessonCompareWritingButton").textContent = "Ausblenden";
     playItem(step.item);
   });
   $("#lessonClearCanvasButton").addEventListener("click", clearLessonWritingCanvas);
@@ -1461,14 +1493,13 @@ function renderWordWriteStep(step) {
   `;
   bindLessonWritingCanvas();
   bindLessonSelfCheck();
-  $("#lessonCompareWritingButton").addEventListener("click", () => {
-    compareLessonWriting(digit);
-    playItem(step.item);
-  });
+  $("#lessonCompareWritingButton").addEventListener("click", () => compareLessonWriting(digit));
   $("#lessonPlayWritingAudioButton").addEventListener("click", () => playItem(step.item));
   $("#lessonShowLetterButton").addEventListener("click", () => {
     $("#lessonWritingTarget").classList.remove("hidden");
     $("#lessonLetterAnswer").classList.remove("hidden");
+    $("#lessonCompareWritingButton").classList.add("active");
+    $("#lessonCompareWritingButton").textContent = "Ausblenden";
     playItem(step.item);
   });
   $("#lessonClearCanvasButton").addEventListener("click", clearLessonWritingCanvas);
@@ -1847,8 +1878,13 @@ function checkLessonAnswer(step) {
 }
 
 function correctFeedbackText(step) {
-  if (step.type === "wordListen" || step.type === "sentenceListen") return step.item.german;
+  if (step.type === "sentenceListen") return quotedGerman(step.item.german);
+  if (step.type === "wordListen") return step.item.german;
   return randomCopy("correct");
+}
+
+function quotedGerman(text) {
+  return `„${text}“`;
 }
 
 function randomCopy(kind) {
@@ -1952,6 +1988,9 @@ function showLessonFeedback(status, title, text) {
 }
 
 function correctAnswerText(step) {
+  if (step.type === "sentenceListen") {
+    return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-text">${quotedGerman(step.item.german)}</span>`;
+  }
   if (step.type === "sentenceBuild" || step.type === "sentenceMeaning" || step.type === "sentenceListen" || step.type === "wordListen") {
     return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-text">${step.item.german}</span>`;
   }

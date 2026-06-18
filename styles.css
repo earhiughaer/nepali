@@ -654,6 +654,12 @@ body[data-view="lesson"] .app-shell {
   height: 22px;
 }
 
+#lessonCompareWritingButton.active {
+  border-color: #129cef;
+  background: #eef8ff;
+  color: #0f6fa8;
+}
+
 .writing-answer {
   width: min(100%, 520px);
   justify-items: center;
