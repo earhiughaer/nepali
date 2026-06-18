@@ -1,11 +1,11 @@
-const cacheName = "nepali-pwa-v30";
-const runtimeCacheName = "nepali-pwa-runtime-v30";
+const cacheName = "nepali-pwa-v33";
+const runtimeCacheName = "nepali-pwa-runtime-v33";
 const assets = [
   ".",
   "index.html",
-  "styles.css?v=30",
-  "content.js?v=30",
-  "app.js?v=30",
+  "styles.css?v=33",
+  "content.js?v=33",
+  "app.js?v=33",
   "bling.mp3",
   "fanfaren.mp3",
   "manifest.webmanifest",

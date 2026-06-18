@@ -551,6 +551,11 @@ body[data-view="lesson"] .app-shell {
   -webkit-touch-callout: none;
 }
 
+.lesson-score-meter {
+  width: min(100%, 520px);
+  margin: 6px 0 4px;
+}
+
 .lesson-writing-side {
   display: grid;
   align-content: start;
@@ -1539,6 +1544,18 @@ main {
   grid-template-columns: 1.25fr repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin: 20px 0;
+}
+
+.profile-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.profile-row select {
+  min-width: min(100%, 220px);
 }
 
 .home-card {

@@ -59,7 +59,11 @@ const lessonLetters = [
   ...alphabet.filter((item) => item.type === "vowel")
 ];
 const phaseIntervals = content.phaseIntervals;
-const storeKey = "nepali-pwa-progress-v13";
+const baseStoreKey = "nepali-pwa-progress-v13";
+const profileListKey = "nepali-pwa-profiles-v1";
+const activeProfileKey = "nepali-pwa-active-profile-v1";
+const defaultProfileId = "martin";
+let storeKey = baseStoreKey;
 const lessonRomanKey = "nepali-pwa-lesson-roman-v3";
 const soundKey = "nepali-pwa-sound-v1";
 const legacyStoreKey = "nepali-pwa-progress-v1";
@@ -117,6 +121,8 @@ const feedbackCopy = {
 
 const state = {
   view: "home",
+  profileId: defaultProfileId,
+  profiles: [{ id: defaultProfileId, name: "Martin" }],
   homePhase: 1,
   alphabetFilter: "all",
   wordFilter: "all",
@@ -167,6 +173,8 @@ const els = {
   dueCount: $("#dueCount"),
   masteredCount: $("#masteredCount"),
   streakCount: $("#streakCount"),
+  profileSelect: $("#profileSelect"),
+  addProfileButton: $("#addProfileButton"),
   lessonExitButton: $("#lessonExitButton"),
   lessonSoundButton: $("#lessonSoundButton"),
   lessonPathTitle: $("#lessonPathTitle"),
@@ -234,6 +242,7 @@ const els = {
 const canvasContext = els.drawingCanvas.getContext("2d", { willReadFrequently: true });
 let isDrawing = false;
 let lastPoint = null;
+let drawingMoved = false;
 
 function todayKey(offset = 0) {
   const date = new Date();
@@ -244,6 +253,38 @@ function todayKey(offset = 0) {
 
 function cardKey(kind, id) {
   return `${kind}:${id}`;
+}
+
+function profileStoreKey(profileId = state.profileId) {
+  return `nepali-pwa-progress-v13:${profileId}`;
+}
+
+function profileIdFromName(name) {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `profil-${Date.now()}`;
+}
+
+function loadProfiles() {
+  try {
+    const profiles = JSON.parse(localStorage.getItem(profileListKey));
+    if (Array.isArray(profiles) && profiles.length) state.profiles = profiles;
+  } catch {
+    localStorage.removeItem(profileListKey);
+  }
+  state.profileId = localStorage.getItem(activeProfileKey) || state.profiles[0].id;
+  if (!state.profiles.some((profile) => profile.id === state.profileId)) state.profileId = state.profiles[0].id;
+  storeKey = profileStoreKey();
+}
+
+function saveProfiles() {
+  localStorage.setItem(profileListKey, JSON.stringify(state.profiles));
+  localStorage.setItem(activeProfileKey, state.profileId);
+}
+
+function resetProgressState() {
+  state.knownLetters = new Set();
+  state.cards = {};
+  state.streak = 0;
+  state.lastLessonDate = null;
 }
 
 function ensureCard(kind, item) {
@@ -276,13 +317,35 @@ function isNew(card) {
   return card.correct === 0 && card.wrong === 0;
 }
 
+function dailyNewLimit(kind) {
+  if (kind === "letter") return 3;
+  if (kind === "word") return 4;
+  return 2;
+}
+
+function dailyNewItems(kind) {
+  const items = kind === "letter" ? lessonLetters : kind === "word" ? words : sentences;
+  return items.filter((item) => isNew(ensureCard(kind, item))).slice(0, dailyNewLimit(kind));
+}
+
+function isTodayDue(kind, item) {
+  const card = ensureCard(kind, item);
+  if (!isDue(card)) return false;
+  if (!isNew(card)) return true;
+  return dailyNewItems(kind).some((candidate) => candidate.id === item.id);
+}
+
+function todayDueLearningItems() {
+  return allLearningItems().filter(({ kind, item }) => isTodayDue(kind, item));
+}
+
 function filteredItems(kind) {
   const items = kind === "word" ? words : sentences;
   const filter = kind === "word" ? state.wordFilter : state.sentenceFilter;
   if (filter === "all") return items;
   return items.filter((item) => {
     const card = ensureCard(kind, item);
-    return filter === "due" ? isDue(card) : isNew(card);
+    return filter === "due" ? isTodayDue(kind, item) : isNew(card);
   });
 }
 
@@ -326,7 +389,7 @@ function filteredAlphabet() {
 
 function loadProgress() {
   try {
-    const saved = JSON.parse(localStorage.getItem(storeKey));
+    const saved = JSON.parse(localStorage.getItem(storeKey)) || (state.profileId === defaultProfileId ? JSON.parse(localStorage.getItem(baseStoreKey)) : null);
     if (saved) {
       state.knownLetters = new Set(saved.knownLetters || []);
       state.cards = saved.cards || {};
@@ -396,15 +459,63 @@ function setView(view) {
 }
 
 function renderProgress() {
-  const due = words.filter((item) => {
-    const card = ensureCard("word", item);
-    return isDue(card) && !isNew(card);
-  }).length;
-  const mastered = words.filter((item) => ensureCard("word", item).phase >= 6).length;
+  const due = todayDueLearningItems().length;
+  const mastered = allLearningItems().filter(({ kind, item }) => ensureCard(kind, item).phase >= 6).length;
   els.dueCount.textContent = due;
   els.masteredCount.textContent = mastered;
   els.streakCount.textContent = state.streak;
   renderHomePhaseList();
+}
+
+function renderProfiles() {
+  if (!els.profileSelect) return;
+  els.profileSelect.innerHTML = "";
+  state.profiles.forEach((profile) => {
+    const option = document.createElement("option");
+    option.value = profile.id;
+    option.textContent = profile.name;
+    option.selected = profile.id === state.profileId;
+    els.profileSelect.append(option);
+  });
+}
+
+function switchProfile(profileId) {
+  saveProgress();
+  state.profileId = profileId;
+  storeKey = profileStoreKey();
+  resetProgressState();
+  state.lesson = {
+    index: 0,
+    steps: [],
+    selected: [],
+    checked: false,
+    results: {},
+    evaluated: false
+  };
+  loadProgress();
+  initCards();
+  saveProfiles();
+  renderProfiles();
+  renderProgress();
+  renderLetter();
+  renderDrawingSelect();
+  clearCanvas();
+  renderDrawingTarget();
+  renderWord();
+  renderSentence();
+}
+
+function addProfile() {
+  const name = window.prompt("Name für das neue Profil?");
+  if (!name || !name.trim()) return;
+  let id = profileIdFromName(name);
+  let suffix = 2;
+  while (state.profiles.some((profile) => profile.id === id)) {
+    id = `${profileIdFromName(name)}-${suffix}`;
+    suffix += 1;
+  }
+  state.profiles.push({ id, name: name.trim() });
+  switchProfile(id);
 }
 
 function renderHomePhaseList() {
@@ -459,7 +570,7 @@ function phaseItemMarkup({ kind, item }) {
       <strong>${main}</strong>
       <span>${roman}</span>
       <em>${german}</em>
-      <small>${dueLabel(card.nextDue)}</small>
+      <small>${dueLabelForItem(kind, item)}</small>
     </article>
   `;
 }
@@ -507,7 +618,7 @@ function renderLetterGrid() {
 
 function renderDrawingSelect() {
   els.drawingLetterSelect.innerHTML = "";
-  alphabet.forEach((letter) => {
+  drawingItems().forEach((letter) => {
     const option = document.createElement("option");
     option.value = letter.id;
     option.textContent = `${letter.char} · ${letter.roman}`;
@@ -516,21 +627,40 @@ function renderDrawingSelect() {
 }
 
 function selectedDrawingLetter() {
-  return alphabet.find((letter) => letter.id === els.drawingLetterSelect.value) || alphabet[0];
+  return drawingItems().find((letter) => letter.id === els.drawingLetterSelect.value) || drawingItems()[0];
 }
 
 function renderDrawingTarget() {
   const letter = selectedDrawingLetter();
   els.drawingTarget.textContent = letter.char;
   els.targetOverlay.textContent = letter.char;
-  els.drawingMeta.textContent = `${letter.roman} · ${letter.type === "vowel" ? "Vokal" : "Konsonant"} · ${letter.sound}`;
+  els.drawingTarget.classList.toggle("hidden", !state.drawingCompared);
+  els.drawingMeta.textContent = letter.kind === "number"
+    ? `Schreibe die Zahl: ${letter.german}`
+    : `Schreibe den Buchstaben: ${letter.roman}`;
   if (!state.drawingCompared) els.targetOverlay.classList.add("hidden");
+}
+
+function drawingItems() {
+  return [
+    ...lessonLetters.map((letter) => ({ ...letter, kind: "letter" })),
+    ...words.filter((word) => word.category === "Zahlen").map((word) => ({
+      id: `number-${word.id}`,
+      sourceId: word.id,
+      char: nepaliNumberDigit(word),
+      roman: word.roman,
+      german: word.german,
+      sound: word.german,
+      kind: "number"
+    }))
+  ];
 }
 
 function clearCanvas() {
   canvasContext.clearRect(0, 0, els.drawingCanvas.width, els.drawingCanvas.height);
   state.drawingCompared = false;
   els.targetOverlay.classList.add("hidden");
+  els.drawingTarget.classList.add("hidden");
   els.scoreBar.style.width = "0%";
   els.scoreCopy.textContent = "Zeichne das Zeichen aus dem Gedächtnis.";
 }
@@ -544,8 +674,10 @@ function canvasPoint(event) {
 }
 
 function startDrawing(event) {
+  event.preventDefault();
   isDrawing = true;
   lastPoint = canvasPoint(event);
+  drawingMoved = false;
   canvasContext.lineCap = "round";
   canvasContext.lineJoin = "round";
   canvasContext.strokeStyle = "#111827";
@@ -555,7 +687,9 @@ function startDrawing(event) {
 
 function draw(event) {
   if (!isDrawing || !lastPoint) return;
+  event.preventDefault();
   const point = canvasPoint(event);
+  drawingMoved = true;
   canvasContext.beginPath();
   canvasContext.moveTo(lastPoint.x, lastPoint.y);
   canvasContext.lineTo(point.x, point.y);
@@ -563,24 +697,44 @@ function draw(event) {
   lastPoint = point;
 }
 
-function stopDrawing() {
+function stopDrawing(event) {
+  if (event) event.preventDefault();
+  if (isDrawing && lastPoint && !drawingMoved) {
+    canvasContext.beginPath();
+    canvasContext.arc(lastPoint.x, lastPoint.y, canvasContext.lineWidth / 2, 0, Math.PI * 2);
+    canvasContext.fillStyle = canvasContext.strokeStyle;
+    canvasContext.fill();
+  }
   isDrawing = false;
   lastPoint = null;
 }
 
 function compareDrawing() {
   const letter = selectedDrawingLetter();
+  const score = drawingSimilarityScore(els.drawingCanvas, canvasContext, letter.char);
+  els.targetOverlay.classList.remove("hidden");
+  els.drawingTarget.classList.remove("hidden");
+  els.scoreBar.style.width = `${score}%`;
+  els.scoreCopy.textContent = score >= 76
+    ? `${score}% Ähnlichkeit. Direkt nochmal langsam wiederholen.`
+    : score >= 48
+      ? `${score}% Ähnlichkeit. Grundform passt, Details prüfen.`
+      : `${score}% Ähnlichkeit. Nutze die rote Vorlage als Orientierung.`;
+  state.drawingCompared = true;
+}
+
+function drawingSimilarityScore(canvas, context, targetChar) {
   const targetCanvas = document.createElement("canvas");
-  targetCanvas.width = els.drawingCanvas.width;
-  targetCanvas.height = els.drawingCanvas.height;
+  targetCanvas.width = canvas.width;
+  targetCanvas.height = canvas.height;
   const targetContext = targetCanvas.getContext("2d", { willReadFrequently: true });
   targetContext.fillStyle = "#000";
   targetContext.textAlign = "center";
   targetContext.textBaseline = "middle";
-  targetContext.font = "460px Georgia, serif";
-  targetContext.fillText(letter.char, targetCanvas.width / 2, targetCanvas.height / 2 + 12);
+  targetContext.font = `${Math.round(canvas.width * 0.84)}px Georgia, serif`;
+  targetContext.fillText(targetChar, targetCanvas.width / 2, targetCanvas.height / 2 + Math.round(canvas.height * 0.02));
 
-  const userData = canvasContext.getImageData(0, 0, els.drawingCanvas.width, els.drawingCanvas.height).data;
+  const userData = context.getImageData(0, 0, canvas.width, canvas.height).data;
   const targetData = targetContext.getImageData(0, 0, targetCanvas.width, targetCanvas.height).data;
   let overlap = 0;
   let drawn = 0;
@@ -594,17 +748,19 @@ function compareDrawing() {
     if (userInk && nearbyTargetInk(targetData, index, targetCanvas.width)) overlap += 1;
   }
 
-  const coverage = target ? Math.min(1, overlap / Math.max(1, target * 0.68)) : 0;
-  const precision = drawn ? Math.min(1, overlap / drawn) : 0;
-  const score = Math.round((coverage * 0.62 + precision * 0.38) * 100);
-  els.targetOverlay.classList.remove("hidden");
-  els.scoreBar.style.width = `${score}%`;
-  els.scoreCopy.textContent = score >= 76
-    ? `${score}% Ähnlichkeit. Direkt nochmal langsam wiederholen.`
-    : score >= 48
-      ? `${score}% Ähnlichkeit. Grundform passt, Details prüfen.`
-      : `${score}% Ähnlichkeit. Nutze die rote Vorlage als Orientierung.`;
-  state.drawingCompared = true;
+  const coverage = target ? Math.min(1, overlap / Math.max(1, target * 0.42)) : 0;
+  const precision = drawn ? Math.min(1, overlap / Math.max(1, drawn * 0.66)) : 0;
+  return drawn ? Math.min(100, Math.round((coverage * 0.7 + precision * 0.3) * 118)) : 0;
+}
+
+function compareLessonWriting(targetChar) {
+  const canvas = $("#lessonWritingCanvas");
+  const bar = $("#lessonScoreBar");
+  const copy = $("#lessonScoreCopy");
+  if (!canvas || !bar || !copy) return;
+  const score = drawingSimilarityScore(canvas, canvas.getContext("2d", { willReadFrequently: true }), targetChar);
+  bar.style.width = `${score}%`;
+  copy.textContent = `${score}% Ähnlichkeit. Entscheide selbst, ob du es gewusst hast.`;
 }
 
 function nearbyTargetInk(data, alphaIndex, width) {
@@ -631,7 +787,7 @@ function renderWord() {
   els.wordDetail.innerHTML = state.wordFlipped ? `<span>${item.roman}</span><em>${item.german}</em>` : " ";
   els.wordCategory.textContent = item.category;
   els.wordPhase.textContent = `Stufe ${card.phase}`;
-  els.wordDue.textContent = dueLabel(card.nextDue);
+  els.wordDue.textContent = dueLabelForItem("word", item);
   renderPhaseStrip("word");
   renderProgress();
   updateListStates("word");
@@ -644,7 +800,7 @@ function renderSentence() {
   els.sentenceDetail.innerHTML = state.sentenceFlipped ? `<span>${item.roman}</span><em>${item.german}</em>` : " ";
   els.sentenceCategory.textContent = item.category;
   els.sentencePhase.textContent = `Stufe ${card.phase}`;
-  els.sentenceDue.textContent = dueLabel(card.nextDue);
+  els.sentenceDue.textContent = dueLabelForItem("sentence", item);
   renderPhaseStrip("sentence");
   renderProgress();
   updateListStates("sentence");
@@ -656,6 +812,13 @@ function dueLabel(nextDue) {
   const now = new Date(`${todayKey()}T12:00:00`);
   const days = Math.round((due - now) / 86400000);
   return days === 1 ? "morgen" : `in ${days} Tagen`;
+}
+
+function dueLabelForItem(kind, item) {
+  const card = ensureCard(kind, item);
+  if (isTodayDue(kind, item)) return "heute fällig";
+  if (isNew(card)) return "neu";
+  return dueLabel(card.nextDue);
 }
 
 function renderWordList() {
@@ -702,7 +865,7 @@ function cardListMarkup(kind, item) {
     <strong>${item.nepali}</strong>
     <span>${item.roman}</span>
     <span>${item.german}</span>
-    <em>Stufe ${card.phase} · ${dueLabel(card.nextDue)}</em>
+    <em>Stufe ${card.phase} · ${dueLabelForItem(kind, item)}</em>
   `;
 }
 
@@ -712,9 +875,9 @@ function updateListStates(kind) {
   host.querySelectorAll(selector).forEach((button) => {
     const card = ensureCard(kind, { id: button.dataset.id });
     button.classList.toggle("known", card.phase >= 6);
-    button.classList.toggle("due", isDue(card));
+    button.classList.toggle("due", isTodayDue(kind, { id: button.dataset.id }));
     const em = button.querySelector("em");
-    if (em) em.textContent = `Stufe ${card.phase} · ${dueLabel(card.nextDue)}`;
+    if (em) em.textContent = `Stufe ${card.phase} · ${dueLabelForItem(kind, { id: button.dataset.id })}`;
   });
 }
 
@@ -795,14 +958,14 @@ function buildLessonSteps() {
 }
 
 function pickLessonUnits() {
-  const dueReview = allLearningItems().filter(({ kind, item }) => {
+  const dueReview = todayDueLearningItems().filter(({ kind, item }) => {
     const card = ensureCard(kind, item);
-    return isDue(card) && !isNew(card);
+    return !isNew(card);
   });
   const newUnits = [
-    pickNewUnit("letter"),
-    pickNewUnit("word"),
-    pickNewUnit("sentence")
+    dailyNewItems("letter")[0] ? { kind: "letter", item: dailyNewItems("letter")[0], isNew: true } : null,
+    dailyNewItems("word")[0] ? { kind: "word", item: dailyNewItems("word")[0], isNew: true } : null,
+    dailyNewItems("sentence")[0] ? { kind: "sentence", item: dailyNewItems("sentence")[0], isNew: true } : null
   ].filter(Boolean);
   const neededNewCount = dueReview.length ? 1 : 3;
   return uniqueLessonUnits([...dueReview, ...newUnits.slice(0, Math.max(neededNewCount, 3 - dueReview.length))]);
@@ -1088,9 +1251,12 @@ function renderLetterWriteStep(step) {
         ${romanLine(step.item, step)}
       </div>
       <div class="lesson-writing-tools">
+        <button class="primary-button" id="lessonCompareWritingButton">Vergleichen</button>
         <button class="secondary-button" id="lessonShowLetterButton">Buchstabe anzeigen</button>
         <button class="secondary-button" id="lessonClearCanvasButton">Löschen</button>
       </div>
+      <div class="score-meter lesson-score-meter" aria-label="Ähnlichkeit"><span id="lessonScoreBar"></span></div>
+      <p class="score-copy" id="lessonScoreCopy">Zeichne erst aus dem Gedächtnis.</p>
     </div>
     <div class="recall-actions" id="recallActions">
       <button class="secondary-button danger-button" data-self-check="false">Nicht gewusst</button>
@@ -1099,6 +1265,7 @@ function renderLetterWriteStep(step) {
   `;
   bindLessonWritingCanvas();
   bindLessonSelfCheck();
+  $("#lessonCompareWritingButton").addEventListener("click", () => compareLessonWriting(step.item.char));
   $("#lessonShowLetterButton").addEventListener("click", () => {
     $("#lessonLetterAnswer").classList.remove("hidden");
     playItem(step.item);
@@ -1117,9 +1284,12 @@ function renderWordWriteStep(step) {
         <strong>${digit}</strong>
       </div>
       <div class="lesson-writing-tools">
+        <button class="primary-button" id="lessonCompareWritingButton">Vergleichen</button>
         <button class="secondary-button" id="lessonShowLetterButton">Zahl anzeigen</button>
         <button class="secondary-button" id="lessonClearCanvasButton">Löschen</button>
       </div>
+      <div class="score-meter lesson-score-meter" aria-label="Ähnlichkeit"><span id="lessonScoreBar"></span></div>
+      <p class="score-copy" id="lessonScoreCopy">Zeichne erst aus dem Gedächtnis.</p>
     </div>
     <div class="recall-actions" id="recallActions">
       <button class="secondary-button danger-button" data-self-check="false">Nicht gewusst</button>
@@ -1128,6 +1298,7 @@ function renderWordWriteStep(step) {
   `;
   bindLessonWritingCanvas();
   bindLessonSelfCheck();
+  $("#lessonCompareWritingButton").addEventListener("click", () => compareLessonWriting(digit));
   $("#lessonShowLetterButton").addEventListener("click", () => {
     $("#lessonLetterAnswer").classList.remove("hidden");
   });
@@ -1907,6 +2078,7 @@ function bindEvents() {
   els.drawingCanvas.addEventListener("pointermove", draw);
   els.drawingCanvas.addEventListener("pointerup", stopDrawing);
   els.drawingCanvas.addEventListener("pointercancel", stopDrawing);
+  els.drawingCanvas.addEventListener("contextmenu", (event) => event.preventDefault());
   els.compareButton.addEventListener("click", compareDrawing);
   els.clearCanvasButton.addEventListener("click", clearCanvas);
 
@@ -1939,6 +2111,8 @@ function bindEvents() {
   els.lessonExitButton.addEventListener("click", confirmExitLesson);
   els.lessonSoundButton.addEventListener("click", toggleSound);
   els.lessonContinueButton.addEventListener("click", continueLesson);
+  els.profileSelect.addEventListener("change", () => switchProfile(els.profileSelect.value));
+  els.addProfileButton.addEventListener("click", addProfile);
 }
 
 function toggleSet(set, value) {
@@ -1960,9 +2134,11 @@ function initCards() {
 }
 
 function init() {
+  loadProfiles();
   loadProgress();
   loadLessonSettings();
   initCards();
+  renderProfiles();
   bindEvents();
   document.body.dataset.view = state.view;
   renderLetterGrid();
