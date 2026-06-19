@@ -68,7 +68,9 @@ const lessonRomanKey = "nepali-pwa-lesson-roman-v3";
 const soundKey = "nepali-pwa-sound-v1";
 const legacyStoreKey = "nepali-pwa-progress-v1";
 const lessonUnitGap = 2;
+const firstPracticeMinGap = 3;
 const maxNewLessonUnits = 4;
+const correctSoundVolume = 0.35;
 const letterAudioByChar = {
   "अ": "alphabet/vowels/01_a_अ.mp3",
   "आ": "alphabet/vowels/02_aa_आ.mp3",
@@ -1040,7 +1042,7 @@ function startLesson() {
 
 function buildLessonSteps() {
   const lessonUnits = pickLessonUnits();
-  const unitQueues = lessonUnits.map(lessonUnitQueue);
+  const unitQueues = shuffle(lessonUnits).map(lessonUnitQueue);
 
   return [
     ...interleaveLessonSteps(unitQueues),
@@ -1211,7 +1213,7 @@ function interleaveLessonSteps(queues, initialSteps = []) {
   // Er greift immer nur den nächsten Schritt einer Kette auf: dadurch bleibt
   // die Schwierigkeit pro Item in der Reihenfolge Einführung -> leicht -> schwer.
   // Neue Inhalte werden nicht mehr blockweise eingeführt; sobald nach einer
-  // Einführung 2-3 andere Aufgaben Abstand liegen, bekommt diese Einheit
+  // Einführung 3-4 andere Aufgaben Abstand liegen, bekommt diese Einheit
   // Vorrang für ihre erste leichte Abfrage.
   while (openQueues.some((queue) => queue.length)) {
     const fullHistory = [...history, ...mixed];
@@ -1225,15 +1227,24 @@ function interleaveLessonSteps(queues, initialSteps = []) {
 
 function nextQueueIndex(queues, history, cursor) {
   const readyFirstPractice = lessonCandidateIndexes(queues, history, cursor)
-    .filter(({ step }) => isFirstPracticeAfterTeach(step, history) && distanceSinceUnit(history, step.unit) >= 2);
-  if (readyFirstPractice.length) return readyFirstPractice[0].queueIndex;
+    .filter(({ step }) => isFirstPracticeAfterTeach(step, history) && distanceSinceUnit(history, step.unit) >= firstPracticeMinGap);
+  if (readyFirstPractice.length) return pickLessonCandidate(readyFirstPractice, history).queueIndex;
 
   const normal = lessonCandidateIndexes(queues, history, cursor)
     .filter(({ step }) => !hasRecentUnit(history, step.unit, lessonUnitGap))
     .filter(({ step }) => !isTeachStep(step) || !hasReadyFirstPractice(queues, history));
-  if (normal.length) return normal[0].queueIndex;
+  if (normal.length) return pickLessonCandidate(normal, history).queueIndex;
 
   return bestFallbackQueue(queues, history, cursor);
+}
+
+function pickLessonCandidate(candidates, history) {
+  const lastKind = history.length ? history[history.length - 1].kind : null;
+  const varied = candidates.filter(({ step }) => step.kind !== lastKind);
+  const pool = varied.length ? varied : candidates;
+  const maxDistance = Math.max(...pool.map(({ distance }) => distance));
+  const farEnough = pool.filter(({ distance }) => distance === maxDistance || distance >= firstPracticeMinGap);
+  return shuffle(farEnough.length ? farEnough : pool)[0];
 }
 
 function lessonCandidateIndexes(queues, history, cursor) {
@@ -1248,7 +1259,7 @@ function lessonCandidateIndexes(queues, history, cursor) {
 }
 
 function hasReadyFirstPractice(queues, history) {
-  return queues.some((queue) => queue.length && isFirstPracticeAfterTeach(queue[0], history) && distanceSinceUnit(history, queue[0].unit) >= 2);
+  return queues.some((queue) => queue.length && isFirstPracticeAfterTeach(queue[0], history) && distanceSinceUnit(history, queue[0].unit) >= firstPracticeMinGap);
 }
 
 function bestFallbackQueue(queues, history, cursor) {
@@ -2151,6 +2162,7 @@ async function playCorrectSound() {
   try {
     const player = state.correctSound || new Audio("bling.mp3");
     state.correctSound = player;
+    player.volume = correctSoundVolume;
     player.pause();
     player.currentTime = 0;
     await player.play();
@@ -2188,6 +2200,7 @@ function stopActiveAudio() {
 function prepareCorrectSound() {
   if (state.correctSound) return;
   state.correctSound = new Audio("bling.mp3");
+  state.correctSound.volume = correctSoundVolume;
   state.correctSound.preload = "auto";
   state.correctSound.load();
   if (!state.levelUpSound) {
