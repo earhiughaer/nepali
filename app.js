@@ -275,6 +275,7 @@ const els = {
   scoreBar: $("#scoreBar"),
   scoreCopy: $("#scoreCopy"),
   compareButton: $("#compareButton"),
+  playDrawingAudioButton: $("#playDrawingAudioButton"),
   clearCanvasButton: $("#clearCanvasButton"),
   wordCard: $("#wordCard"),
   wordSymbol: $("#wordSymbol"),
@@ -718,6 +719,7 @@ function renderDrawingTarget() {
   const letter = selectedDrawingLetter();
   els.drawingTarget.textContent = letter.char;
   els.targetOverlay.textContent = letter.char;
+  els.playDrawingAudioButton.innerHTML = audioIcon();
   els.drawingTarget.classList.toggle("hidden", !state.drawingCompared);
   els.drawingMeta.textContent = letter.kind === "number"
     ? `Schreibe die Zahl: ${letter.german}`
@@ -1037,32 +1039,43 @@ function startLesson() {
 
 function buildLessonSteps() {
   const lessonUnits = pickLessonUnits();
-  const lessonLetterItems = lessonUnits.filter((unit) => unit.kind === "letter").map((unit) => unit.item);
-  const lessonWords = lessonUnits.filter((unit) => unit.kind === "word").map((unit) => unit.item);
-  const lessonSentences = lessonUnits.filter((unit) => unit.kind === "sentence").map((unit) => unit.item);
-  const teachSteps = [
-    ...lessonUnits
-      .filter((unit) => unit.isNew)
-      .map((unit) => lessonStep(unit.kind === "letter" ? "teachLetter" : unit.kind === "word" ? "teachWord" : "teachSentence", unit.kind, unit.item))
-  ];
-  const practiceQueues = [
-    lessonLetterItems.map((item) => lessonStep("letterRecognize", "letter", item, "erkennen")),
-    lessonWords.map((item) => lessonStep("wordRecognize", "word", item, "zuordnen")),
-    lessonSentences.map((item) => lessonStep("sentenceMeaning", "sentence", item, "bedeutung")),
-    lessonWords.map((item) => lessonStep("wordListen", "word", item, "hoeren")),
-    lessonLetterItems.map((item) => lessonStep("letterWrite", "letter", item, "schreiben")),
-    lessonSentences.map((item) => lessonStep("sentenceBuild", "sentence", item, "bauen")),
-    lessonWords.filter((item) => item.category === "Zahlen").map((item) => lessonStep("wordWrite", "word", item, "schreiben")),
-    lessonWords.map((item) => lessonStep("wordRecall", "word", item, "erinnern")),
-    lessonSentences.map((item) => lessonStep("sentenceListen", "sentence", item, "hoeren")),
-    lessonSentences.map((item) => lessonStep("sentenceRecall", "sentence", item, "erinnern"))
-  ].map(shuffle);
+  const unitQueues = lessonUnits.map(lessonUnitQueue);
 
   return [
-    ...teachSteps,
-    ...interleaveLessonSteps(practiceQueues, teachSteps),
+    ...interleaveLessonSteps(unitQueues),
     { type: "lessonComplete" }
   ];
+}
+
+function lessonUnitQueue(unit) {
+  const steps = [];
+  if (unit.isNew) {
+    steps.push(lessonStep(unit.kind === "letter" ? "teachLetter" : unit.kind === "word" ? "teachWord" : "teachSentence", unit.kind, unit.item));
+  }
+  const practice = [];
+  if (unit.kind === "letter") {
+    practice.push(
+      lessonStep("letterRecognize", "letter", unit.item, "erkennen"),
+      lessonStep("letterWrite", "letter", unit.item, "schreiben")
+    );
+  }
+  if (unit.kind === "word") {
+    practice.push(
+      lessonStep("wordRecognize", "word", unit.item, "zuordnen"),
+      lessonStep("wordListen", "word", unit.item, "hoeren"),
+      lessonStep("wordRecall", "word", unit.item, "erinnern")
+    );
+    if (unit.item.category === "Zahlen") practice.push(lessonStep("wordWrite", "word", unit.item, "schreiben"));
+  }
+  if (unit.kind === "sentence") {
+    practice.push(
+      lessonStep("sentenceMeaning", "sentence", unit.item, "bedeutung"),
+      lessonStep("sentenceBuild", "sentence", unit.item, "bauen"),
+      lessonStep("sentenceListen", "sentence", unit.item, "hoeren"),
+      lessonStep("sentenceRecall", "sentence", unit.item, "erinnern")
+    );
+  }
+  return [...steps, ...shuffle(practice)];
 }
 
 function pickLessonUnits() {
@@ -1076,14 +1089,22 @@ function pickLessonUnits() {
 }
 
 function pickLessonGroup(kind, items, count) {
-  return uniqueItems([
-    ...items.filter((item) => isDue(ensureCard(kind, item)) && !isNew(ensureCard(kind, item))),
-    ...items.filter((item) => isDue(ensureCard(kind, item)) && isNew(ensureCard(kind, item))),
-    ...items.filter((item) => !isNew(ensureCard(kind, item))),
-    ...items
-  ])
-    .slice(0, count)
-    .map((item) => ({ kind, item, isNew: isNew(ensureCard(kind, item)) }));
+  const selected = [];
+  addLessonItems(selected, items.filter((item) => isDue(ensureCard(kind, item)) && !isNew(ensureCard(kind, item)) && ensureCard(kind, item).wrong > 0), count);
+  addLessonItems(selected, items.filter((item) => isDue(ensureCard(kind, item)) && !isNew(ensureCard(kind, item))), count);
+  if (!selected.length) addLessonItems(selected, items.filter((item) => !isNew(ensureCard(kind, item))), Math.min(2, count));
+  addLessonItems(selected, items.filter((item) => isDue(ensureCard(kind, item)) && isNew(ensureCard(kind, item))), count);
+  addLessonItems(selected, items.filter((item) => !isNew(ensureCard(kind, item))), count);
+  addLessonItems(selected, items, count);
+  return shuffle(selected.slice(0, count).map((item) => ({ kind, item, isNew: isNew(ensureCard(kind, item)) })));
+}
+
+function addLessonItems(selected, candidates, limit) {
+  shuffle(candidates).forEach((item) => {
+    if (selected.length >= limit) return;
+    if (selected.some((candidate) => candidate.id === item.id)) return;
+    selected.push(item);
+  });
 }
 
 function pickScriptLessonGroup(numberWords) {
@@ -1651,6 +1672,7 @@ function renderRecallStep(step) {
       <div class="recall-answer hidden" id="recallAnswer">
         <strong>${answerText}</strong>
         ${romanLine(step.item, step)}
+        ${step.type === "wordRecall" ? `<button class="secondary-button audio-inline-button" id="recallAudioButton" type="button" aria-label="Wort anhören">${audioIcon()}</button>` : ""}
       </div>
     </div>
     <div class="recall-actions hidden" id="recallActions">
@@ -1665,6 +1687,7 @@ function renderRecallStep(step) {
     $("#revealRecallButton").disabled = true;
     playItem(step.item);
   });
+  $("#recallAudioButton")?.addEventListener("click", () => playItem(step.item));
   els.lessonContinueButton.classList.add("is-hidden-until-ready");
   bindLessonSelfCheck();
 }
@@ -2293,6 +2316,7 @@ function bindEvents() {
   els.drawingCanvas.addEventListener("pointercancel", stopDrawing);
   els.drawingCanvas.addEventListener("contextmenu", (event) => event.preventDefault());
   els.compareButton.addEventListener("click", compareDrawing);
+  els.playDrawingAudioButton.addEventListener("click", () => playItem(selectedDrawingLetter()));
   els.clearCanvasButton.addEventListener("click", clearCanvas);
 
   els.wordCard.addEventListener("click", () => {
