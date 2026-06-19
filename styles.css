@@ -1678,6 +1678,14 @@ main {
   color: rgba(255, 255, 255, 0.82);
 }
 
+.home-version {
+  margin-top: 4px;
+  color: rgba(100, 116, 139, 0.72);
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-align: center;
+}
+
 .home-phase-panel {
   display: grid;
   gap: 14px;

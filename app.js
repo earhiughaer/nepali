@@ -59,6 +59,7 @@ const lessonLetters = [
   ...alphabet.filter((item) => item.type === "vowel")
 ];
 const phaseIntervals = content.phaseIntervals;
+const appVersion = "v43";
 const baseStoreKey = "nepali-pwa-progress-v13";
 const profileListKey = "nepali-pwa-profiles-v1";
 const activeProfileKey = "nepali-pwa-active-profile-v1";
@@ -256,6 +257,7 @@ const els = {
   lessonPathMeta: $("#lessonPathMeta"),
   homePhaseTabs: $("#homePhaseTabs"),
   homePhaseList: $("#homePhaseList"),
+  appVersionLabel: $("#appVersionLabel"),
   lessonProgressBar: $("#lessonProgressBar"),
   lessonStage: $("#lessonStage"),
   lessonFeedback: $("#lessonFeedback"),
@@ -2437,6 +2439,7 @@ function init() {
   renderSentenceList();
   renderPhrases();
   renderProgress();
+  els.appVersionLabel.textContent = `Version ${appVersion}`;
   renderHomePhaseList();
   renderLetter();
   renderDrawingTarget();
