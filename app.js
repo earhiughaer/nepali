@@ -59,7 +59,7 @@ const lessonLetters = [
   ...alphabet.filter((item) => item.type === "vowel")
 ];
 const phaseIntervals = content.phaseIntervals;
-const appVersion = "v43";
+const appVersion = "v44";
 const baseStoreKey = "nepali-pwa-progress-v13";
 const profileListKey = "nepali-pwa-profiles-v1";
 const activeProfileKey = "nepali-pwa-active-profile-v1";
@@ -68,10 +68,10 @@ let storeKey = baseStoreKey;
 const lessonRomanKey = "nepali-pwa-lesson-roman-v3";
 const soundKey = "nepali-pwa-sound-v1";
 const legacyStoreKey = "nepali-pwa-progress-v1";
-const lessonUnitGap = 2;
+const lessonUnitGap = 3;
 const firstPracticeMinGap = 3;
 const maxNewLessonUnits = 4;
-const correctSoundVolume = 0.35;
+const correctSoundVolume = 0.12;
 const letterAudioByChar = {
   "अ": "alphabet/vowels/01_a_अ.mp3",
   "आ": "alphabet/vowels/02_aa_आ.mp3",
@@ -1065,8 +1065,11 @@ function lessonUnitQueue(unit) {
   }
   if (unit.kind === "word") {
     steps.push(lessonStep("wordRecognize", "word", unit.item, "zuordnen"));
-    if (!unit.isNew || phase >= 2 || hadTrouble) steps.push(lessonStep("wordListen", "word", unit.item, "hoeren"));
-    if (!unit.isNew && (phase >= 3 || hadTrouble)) steps.push(lessonStep("wordRecall", "word", unit.item, "erinnern"));
+    if (!unit.isNew || phase >= 2 || hadTrouble) {
+      steps.push(phase >= 3 && !hadTrouble
+        ? lessonStep("wordRecall", "word", unit.item, "erinnern")
+        : lessonStep("wordListen", "word", unit.item, "hoeren"));
+    }
     if (unit.item.category === "Zahlen" && (!unit.isNew || phase >= 2 || hadTrouble)) {
       steps.push(lessonStep("wordWrite", "word", unit.item, "schreiben"));
     }
@@ -1074,11 +1077,12 @@ function lessonUnitQueue(unit) {
   if (unit.kind === "sentence") {
     steps.push(lessonStep("sentenceMeaning", "sentence", unit.item, "bedeutung"));
     if (!unit.isNew || phase >= 2 || hadTrouble) {
-      steps.push(phase >= 3 || hadTrouble
+      steps.push(phase >= 4 && !hadTrouble
+        ? lessonStep("sentenceRecall", "sentence", unit.item, "erinnern")
+        : phase >= 3 || hadTrouble
         ? lessonStep("sentenceListen", "sentence", unit.item, "hoeren")
         : lessonStep("sentenceBuild", "sentence", unit.item, "bauen"));
     }
-    if (!unit.isNew && (phase >= 4 || hadTrouble)) steps.push(lessonStep("sentenceRecall", "sentence", unit.item, "erinnern"));
   }
   return steps;
 }
@@ -1265,9 +1269,11 @@ function hasReadyFirstPractice(queues, history) {
 }
 
 function bestFallbackQueue(queues, history, cursor) {
+  const lastUnit = history.length ? history[history.length - 1].unit : null;
   let best = { queueIndex: queues.findIndex((queue) => queue.length), distance: -1 };
   queues.forEach((queue, queueIndex) => {
     if (!queue.length) return;
+    if (queue[0].unit === lastUnit && queues.some((candidate) => candidate.length && candidate[0].unit !== lastUnit)) return;
     const distance = distanceSinceUnit(history, queue[0].unit);
     const cursorBonus = queueIndex >= cursor ? 0.1 : 0;
     if (distance + cursorBonus > best.distance) best = { queueIndex, distance: distance + cursorBonus };
@@ -1677,14 +1683,8 @@ function renderListenStep(step) {
 }
 
 function renderBuildSentenceStep(step) {
-  const correctWords = tokenizeGerman(step.item.german);
-  const distractors = shuffle([
-    "ich", "du", "sie", "wir", "nicht", "gut", "bitte", "morgen", "heute", "wasser",
-    "tee", "reis", "hier", "dort", "ist", "bin", "sind", "ein", "eine", "das",
-    "der", "die", "gehen", "brauche", "sprechen", "langsam", "klein", "groß"
-  ])
-    .filter((word) => !correctWords.includes(word.toLowerCase()))
-    .slice(0, 8);
+  const correctWords = sentenceBuildWords(step.item.german);
+  const distractors = sentenceBuildDistractors(correctWords);
   const chips = shuffle([...correctWords, ...distractors]);
   els.lessonStage.innerHTML = `
     ${lessonHeadingMarkup(step)}
@@ -1702,6 +1702,21 @@ function renderBuildSentenceStep(step) {
   `;
   bindBuildChips(correctWords);
   bindLessonAudio(null, step.item);
+}
+
+function sentenceBuildWords(text) {
+  return tokenizeGerman(text);
+}
+
+function sentenceBuildDistractors(correctWords) {
+  return shuffle([
+    "ich", "du", "sie", "wir", "nicht", "gut", "bitte", "morgen", "heute", "wasser",
+    "tee", "reis", "hier", "dort", "ist", "bin", "sind", "ein", "eine", "das",
+    "der", "die", "gehen", "brauche", "sprechen", "langsam", "klein", "groß",
+    "kostet", "name", "zimmer", "markt", "toilette", "taxi", "nepali"
+  ])
+    .filter((word) => !correctWords.includes(word.toLowerCase()))
+    .slice(0, 8);
 }
 
 function renderRecallStep(step) {
@@ -1944,6 +1959,7 @@ function checkLessonAnswer(step) {
 }
 
 function correctFeedbackText(step) {
+  if (step.type === "letterRecognize") return letterPronunciationHint(step.item);
   if (step.type === "sentenceListen") return quotedGerman(step.item.german);
   if (step.type === "wordListen") return step.item.german;
   return randomCopy("correct");
@@ -2061,9 +2077,38 @@ function correctAnswerText(step) {
     return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-text">${step.item.german}</span>`;
   }
   if (step.kind === "letter") {
-    return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-devanagari">${step.item.char}</span><span class="correct-answer-roman">${step.item.roman}</span>`;
+    return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-devanagari">${step.item.char}</span><span class="correct-answer-roman">${step.item.roman}</span><span class="correct-answer-hint">${letterPronunciationHint(step.item)}</span>`;
   }
   return `<span class="correct-answer-label">Richtige Antwort</span><span class="correct-answer-devanagari">${wordDisplayText(step.item)}</span><span class="correct-answer-roman">${step.item.roman}</span>`;
+}
+
+function letterPronunciationHint(item) {
+  const hints = {
+    ka: "ka wie in „Karte“",
+    kha: "kha mit hörbarem Hauch nach k",
+    ga: "ga wie in englisch „gum“",
+    gha: "gha wie ga mit hörbarem Hauch",
+    nga: "nga wie ng in „singen“",
+    cha: "cha wie tsch in „Tschüss“",
+    chha: "chha wie tsch mit hörbarem Hauch",
+    ja: "ja wie dsch in englisch „jam“",
+    jha: "jha wie dsch mit hörbarem Hauch",
+    nya: "nya wie nj in „Kognak“",
+    ta: item.char === "त" ? "ta mit der Zunge an den Zähnen" : "ta retroflex mit zurückgebogener Zunge",
+    tha: item.char === "थ" ? "tha dental mit hörbarem Hauch" : "tha retroflex mit hörbarem Hauch",
+    da: item.char === "द" ? "da mit der Zunge an den Zähnen" : "da retroflex mit zurückgebogener Zunge",
+    dha: item.char === "ध" ? "dha dental mit hörbarem Hauch" : "dha retroflex mit hörbarem Hauch",
+    na: "na wie in „Name“",
+    pa: "pa wie in „Papa“",
+    ba: "ba wie in „Ball“",
+    ma: "ma wie in „Mama“",
+    ra: "ra kurz gerollt oder getippt",
+    la: "la wie in „Lampe“",
+    sa: "sa wie in „Sonne“",
+    ha: "ha wie in „Hallo“"
+  };
+  const key = item.id || item.roman;
+  return hints[key] || `${item.roman} aussprechen und auf den Klang achten`;
 }
 
 function markLessonAnswers(correct) {

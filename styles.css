@@ -808,6 +808,14 @@ body[data-view="lesson"] .app-shell {
   font-weight: 850;
 }
 
+.lesson-feedback .correct-answer-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: clamp(1.15rem, 4vw, 1.65rem);
+  line-height: 1.25;
+  font-weight: 800;
+}
+
 .lesson-feedback.correct {
   border-color: #22c55e;
   background: #ecfdf5;
