@@ -67,7 +67,7 @@ let storeKey = baseStoreKey;
 const lessonRomanKey = "nepali-pwa-lesson-roman-v3";
 const soundKey = "nepali-pwa-sound-v1";
 const legacyStoreKey = "nepali-pwa-progress-v1";
-const lessonUnitGap = 4;
+const lessonUnitGap = 2;
 const maxNewLessonUnits = 4;
 const letterAudioByChar = {
   "अ": "alphabet/vowels/01_a_अ.mp3",
@@ -248,6 +248,7 @@ const els = {
   profileSelect: $("#profileSelect"),
   addProfileButton: $("#addProfileButton"),
   lessonExitButton: $("#lessonExitButton"),
+  lessonBackButton: $("#lessonBackButton"),
   lessonSoundButton: $("#lessonSoundButton"),
   lessonPathTitle: $("#lessonPathTitle"),
   lessonPathMeta: $("#lessonPathMeta"),
@@ -1052,30 +1053,30 @@ function lessonUnitQueue(unit) {
   if (unit.isNew) {
     steps.push(lessonStep(unit.kind === "letter" ? "teachLetter" : unit.kind === "word" ? "teachWord" : "teachSentence", unit.kind, unit.item));
   }
-  const practice = [];
+  const phase = ensureCard(unit.kind, unit.item).phase;
+  const hadTrouble = ensureCard(unit.kind, unit.item).wrong > 0;
   if (unit.kind === "letter") {
-    practice.push(
-      lessonStep("letterRecognize", "letter", unit.item, "erkennen"),
-      lessonStep("letterWrite", "letter", unit.item, "schreiben")
-    );
+    steps.push(lessonStep("letterRecognize", "letter", unit.item, "erkennen"));
+    if (!unit.isNew || phase >= 2 || hadTrouble) steps.push(lessonStep("letterWrite", "letter", unit.item, "schreiben"));
   }
   if (unit.kind === "word") {
-    practice.push(
-      lessonStep("wordRecognize", "word", unit.item, "zuordnen"),
-      lessonStep("wordListen", "word", unit.item, "hoeren"),
-      lessonStep("wordRecall", "word", unit.item, "erinnern")
-    );
-    if (unit.item.category === "Zahlen") practice.push(lessonStep("wordWrite", "word", unit.item, "schreiben"));
+    steps.push(lessonStep("wordRecognize", "word", unit.item, "zuordnen"));
+    if (!unit.isNew || phase >= 2 || hadTrouble) steps.push(lessonStep("wordListen", "word", unit.item, "hoeren"));
+    if (!unit.isNew && (phase >= 3 || hadTrouble)) steps.push(lessonStep("wordRecall", "word", unit.item, "erinnern"));
+    if (unit.item.category === "Zahlen" && (!unit.isNew || phase >= 2 || hadTrouble)) {
+      steps.push(lessonStep("wordWrite", "word", unit.item, "schreiben"));
+    }
   }
   if (unit.kind === "sentence") {
-    practice.push(
-      lessonStep("sentenceMeaning", "sentence", unit.item, "bedeutung"),
-      lessonStep("sentenceBuild", "sentence", unit.item, "bauen"),
-      lessonStep("sentenceListen", "sentence", unit.item, "hoeren"),
-      lessonStep("sentenceRecall", "sentence", unit.item, "erinnern")
-    );
+    steps.push(lessonStep("sentenceMeaning", "sentence", unit.item, "bedeutung"));
+    if (!unit.isNew || phase >= 2 || hadTrouble) {
+      steps.push(phase >= 3 || hadTrouble
+        ? lessonStep("sentenceListen", "sentence", unit.item, "hoeren")
+        : lessonStep("sentenceBuild", "sentence", unit.item, "bauen"));
+    }
+    if (!unit.isNew && (phase >= 4 || hadTrouble)) steps.push(lessonStep("sentenceRecall", "sentence", unit.item, "erinnern"));
   }
-  return [...steps, ...shuffle(practice)];
+  return steps;
 }
 
 function pickLessonUnits() {
@@ -1206,42 +1207,70 @@ function interleaveLessonSteps(queues, initialSteps = []) {
   const mixed = [];
   const history = initialSteps.filter((step) => step.unit);
   let cursor = 0;
+  // Der Scheduler arbeitet mit geordneten Lernketten pro Inhalt.
+  // Er greift immer nur den nächsten Schritt einer Kette auf: dadurch bleibt
+  // die Schwierigkeit pro Item in der Reihenfolge Einführung -> leicht -> schwer.
+  // Neue Inhalte werden nicht mehr blockweise eingeführt; sobald nach einer
+  // Einführung 2-3 andere Aufgaben Abstand liegen, bekommt diese Einheit
+  // Vorrang für ihre erste leichte Abfrage.
   while (openQueues.some((queue) => queue.length)) {
-    let queueIndex = -1;
-    let stepIndex = 0;
-    for (let offset = 0; offset < openQueues.length; offset += 1) {
-      const index = (cursor + offset) % openQueues.length;
-      const queue = openQueues[index];
-      if (!queue.length) continue;
-      const candidateIndex = queue.findIndex((step) => !hasRecentUnit([...history, ...mixed], step.unit, lessonUnitGap));
-      if (candidateIndex < 0) continue;
-      queueIndex = index;
-      stepIndex = candidateIndex;
-      break;
-    }
-    if (queueIndex < 0) {
-      const best = bestFallbackStep(openQueues, [...history, ...mixed], cursor);
-      queueIndex = best.queueIndex;
-      stepIndex = best.stepIndex;
-    }
+    const fullHistory = [...history, ...mixed];
+    const queueIndex = nextQueueIndex(openQueues, fullHistory, cursor);
     const queue = openQueues[queueIndex];
-    mixed.push(queue.splice(stepIndex, 1)[0]);
+    mixed.push(queue.shift());
     cursor = (queueIndex + 1) % openQueues.length;
   }
   return mixed;
 }
 
-function bestFallbackStep(queues, history, cursor) {
-  let best = { queueIndex: queues.findIndex((queue) => queue.length), stepIndex: 0, distance: -1 };
+function nextQueueIndex(queues, history, cursor) {
+  const readyFirstPractice = lessonCandidateIndexes(queues, history, cursor)
+    .filter(({ step }) => isFirstPracticeAfterTeach(step, history) && distanceSinceUnit(history, step.unit) >= 2);
+  if (readyFirstPractice.length) return readyFirstPractice[0].queueIndex;
+
+  const normal = lessonCandidateIndexes(queues, history, cursor)
+    .filter(({ step }) => !hasRecentUnit(history, step.unit, lessonUnitGap))
+    .filter(({ step }) => !isTeachStep(step) || !hasReadyFirstPractice(queues, history));
+  if (normal.length) return normal[0].queueIndex;
+
+  return bestFallbackQueue(queues, history, cursor);
+}
+
+function lessonCandidateIndexes(queues, history, cursor) {
+  const candidates = [];
+  for (let offset = 0; offset < queues.length; offset += 1) {
+    const queueIndex = (cursor + offset) % queues.length;
+    const queue = queues[queueIndex];
+    if (!queue.length) continue;
+    candidates.push({ queueIndex, step: queue[0], distance: distanceSinceUnit(history, queue[0].unit) });
+  }
+  return candidates;
+}
+
+function hasReadyFirstPractice(queues, history) {
+  return queues.some((queue) => queue.length && isFirstPracticeAfterTeach(queue[0], history) && distanceSinceUnit(history, queue[0].unit) >= 2);
+}
+
+function bestFallbackQueue(queues, history, cursor) {
+  let best = { queueIndex: queues.findIndex((queue) => queue.length), distance: -1 };
   queues.forEach((queue, queueIndex) => {
     if (!queue.length) return;
-    queue.forEach((step, stepIndex) => {
-      const distance = distanceSinceUnit(history, step.unit);
-      const cursorBonus = queueIndex >= cursor ? 0.1 : 0;
-      if (distance + cursorBonus > best.distance) best = { queueIndex, stepIndex, distance: distance + cursorBonus };
-    });
+    const distance = distanceSinceUnit(history, queue[0].unit);
+    const cursorBonus = queueIndex >= cursor ? 0.1 : 0;
+    if (distance + cursorBonus > best.distance) best = { queueIndex, distance: distance + cursorBonus };
   });
-  return best;
+  return best.queueIndex;
+}
+
+function isTeachStep(step) {
+  return step.type === "teachLetter" || step.type === "teachWord" || step.type === "teachSentence";
+}
+
+function isFirstPracticeAfterTeach(step, history) {
+  if (isTeachStep(step) || !step.skill) return false;
+  const taughtIndex = history.findIndex((item) => item.unit === step.unit && isTeachStep(item));
+  const alreadyPracticed = history.some((item) => item.unit === step.unit && item.skill);
+  return taughtIndex >= 0 && !alreadyPracticed;
 }
 
 function hasRecentUnit(steps, unit, gap) {
@@ -1264,6 +1293,7 @@ function renderLesson() {
   const step = state.lesson.steps[state.lesson.index];
   const total = Math.max(1, state.lesson.steps.length);
   els.lessonProgressBar.style.width = `${Math.round((state.lesson.index / total) * 100)}%`;
+  els.lessonBackButton.disabled = state.lesson.index === 0 || state.lesson.evaluated;
   els.lessonFeedback.className = "lesson-feedback hidden";
   els.lessonFeedback.textContent = "";
   els.lessonContinueButton.classList.remove("is-hidden-until-ready");
@@ -2198,6 +2228,15 @@ function confirmExitLesson() {
   }
 }
 
+function goBackLesson() {
+  if (state.lesson.index <= 0 || state.lesson.evaluated) return;
+  stopActiveAudio();
+  state.lesson.index -= 1;
+  state.lesson.selected = [];
+  state.lesson.checked = false;
+  renderLesson();
+}
+
 function speak(text) {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
@@ -2346,6 +2385,7 @@ function bindEvents() {
   });
   els.recordButton.addEventListener("click", toggleRecording);
   els.lessonExitButton.addEventListener("click", confirmExitLesson);
+  els.lessonBackButton.addEventListener("click", goBackLesson);
   els.lessonSoundButton.addEventListener("click", toggleSound);
   els.lessonContinueButton.addEventListener("click", continueLesson);
   els.profileSelect.addEventListener("change", () => switchProfile(els.profileSelect.value));

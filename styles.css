@@ -1783,12 +1783,13 @@ main {
 
 .lesson-mini-top {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-columns: 44px 44px minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
 }
 
-.lesson-exit-button {
+.lesson-exit-button,
+.lesson-back-button {
   width: 44px;
   height: 44px;
   display: inline-grid;
@@ -1802,6 +1803,15 @@ main {
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.lesson-back-button {
+  font-size: 2.2rem;
+}
+
+.lesson-back-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .lesson-mini-top > span {
@@ -1884,10 +1894,11 @@ main {
   }
 
   .lesson-mini-top {
-    grid-template-columns: 42px minmax(0, 1fr) auto;
+    grid-template-columns: 42px 42px minmax(0, 1fr) auto;
   }
 
-  .lesson-exit-button {
+  .lesson-exit-button,
+  .lesson-back-button {
     width: 42px;
     height: 42px;
   }
