@@ -59,7 +59,7 @@ const lessonLetters = [
   ...alphabet.filter((item) => item.type === "vowel")
 ];
 const phaseIntervals = content.phaseIntervals;
-const appVersion = "v44";
+const appVersion = "v45";
 const baseStoreKey = "nepali-pwa-progress-v13";
 const profileListKey = "nepali-pwa-profiles-v1";
 const activeProfileKey = "nepali-pwa-active-profile-v1";
@@ -2302,14 +2302,11 @@ function speak(text) {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   const voices = window.speechSynthesis.getVoices();
-  utterance.lang = "hi-IN";
-  const voice = voices.find((item) => item.lang.toLowerCase().startsWith("ne"))
-    || voices.find((item) => item.lang.toLowerCase().startsWith("hi"))
-    || voices.find((item) => item.lang.toLowerCase() === "en-in");
-  if (voice) {
-    utterance.voice = voice;
-    utterance.lang = voice.lang;
-  }
+  utterance.lang = "ne-NP";
+  const voice = voices.find((item) => item.lang.toLowerCase().startsWith("ne"));
+  if (!voice) return;
+  utterance.voice = voice;
+  utterance.lang = voice.lang;
   utterance.rate = 0.82;
   window.speechSynthesis.speak(utterance);
 }

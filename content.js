@@ -3,7 +3,7 @@ window.NEPALI_CONTENT = {
   words: [
     { id: "namaste", nepali: "नमस्ते", roman: "namaste", german: "Hallo", category: "Begrüßung" },
     { id: "dhanyabad", nepali: "धन्यवाद", roman: "dhanyabad", german: "Danke", category: "Begrüßung" },
-    { id: "kripaya", nepali: "कृपया", roman: "kripaya", german: "bitte", category: "Begrüßung" },
+    { id: "kripaya", nepali: "प्लीज", roman: "plij", german: "bitte", category: "Begrüßung" },
     { id: "maaf", nepali: "माफ गर्नुहोस्", roman: "maaf garnuhos", german: "Entschuldigung", category: "Begrüßung" },
     { id: "ho", nepali: "हो", roman: "ho", german: "ja / ist", category: "Basis" },
     { id: "hoina", nepali: "होइन", roman: "hoina", german: "nein / ist nicht", category: "Basis" },
@@ -36,14 +36,14 @@ window.NEPALI_CONTENT = {
     { id: "nun", nepali: "नुन", roman: "nun", german: "Salz", category: "Essen" },
     { id: "ghar", nepali: "घर", roman: "ghar", german: "Haus", category: "Orte" },
     { id: "kotha", nepali: "कोठा", roman: "kotha", german: "Zimmer", category: "Orte" },
-    { id: "school", nepali: "विद्यालय", roman: "vidyalaya", german: "Schule", category: "Orte" },
+    { id: "school", nepali: "स्कुल", roman: "skul", german: "Schule", category: "Orte" },
     { id: "bajar", nepali: "बजार", roman: "bajar", german: "Markt", category: "Orte" },
     { id: "pasal", nepali: "पसल", roman: "pasal", german: "Laden", category: "Orte" },
     { id: "bato", nepali: "बाटो", roman: "bato", german: "Straße / Weg", category: "Orte" },
     { id: "bus", nepali: "बस", roman: "bas", german: "Bus", category: "Reise" },
     { id: "taxi", nepali: "ट्याक्सी", roman: "tyaksi", german: "Taxi", category: "Reise" },
     { id: "hotel", nepali: "होटल", roman: "hotel", german: "Hotel", category: "Reise" },
-    { id: "sauchalaya", nepali: "शौचालय", roman: "sauchalaya", german: "Toilette", category: "Reise" },
+    { id: "sauchalaya", nepali: "ट्वाइलेट", roman: "twailet", german: "Toilette", category: "Reise" },
     { id: "aaja", nepali: "आज", roman: "aaja", german: "heute", category: "Zeit" },
     { id: "bholi", nepali: "भोलि", roman: "bholi", german: "morgen", category: "Zeit" },
     { id: "hijo", nepali: "हिजो", roman: "hijo", german: "gestern", category: "Zeit" },
@@ -60,7 +60,7 @@ window.NEPALI_CONTENT = {
     { id: "sat", nepali: "सात", roman: "sat", german: "sieben", category: "Zahlen" },
     { id: "aath", nepali: "आठ", roman: "aath", german: "acht", category: "Zahlen" },
     { id: "nau", nepali: "नौ", roman: "nau", german: "neun", category: "Zahlen" },
-    { id: "das", nepali: "दश", roman: "das", german: "zehn", category: "Zahlen" },
+    { id: "das", nepali: "दस", roman: "das", german: "zehn", category: "Zahlen" },
     { id: "thulo", nepali: "ठूलो", roman: "thulo", german: "groß", category: "Eigenschaften" },
     { id: "sano", nepali: "सानो", roman: "sano", german: "klein", category: "Eigenschaften" },
     { id: "tato", nepali: "तातो", roman: "tato", german: "heiß", category: "Eigenschaften" },
@@ -74,32 +74,32 @@ window.NEPALI_CONTENT = {
   ],
   sentences: [
     { id: "hello", nepali: "नमस्ते।", roman: "namaste.", german: "Hallo.", category: "Begrüßung" },
-    { id: "how_are_you", nepali: "तपाईंलाई कस्तो छ?", roman: "tapai lai kasto chha?", german: "Wie geht es Ihnen?", category: "Begrüßung" },
-    { id: "i_am_good", nepali: "मलाई राम्रो छ।", roman: "malai ramro chha.", german: "Mir geht es gut.", category: "Begrüßung" },
+    { id: "how_are_you", nepali: "तपाईं सन्चै हुनुहुन्छ?", roman: "tapai sanchai hunuhunchha?", german: "Wie geht es Ihnen?", category: "Begrüßung" },
+    { id: "i_am_good", nepali: "म सन्चै छु।", roman: "ma sanchai chhu.", german: "Mir geht's gut.", category: "Begrüßung" },
     { id: "thank_you", nepali: "धन्यवाद।", roman: "dhanyabad.", german: "Danke.", category: "Begrüßung" },
-    { id: "please_slowly", nepali: "कृपया बिस्तारी बोल्नुहोस्।", roman: "kripaya bistari bolnuhos.", german: "Bitte sprechen Sie langsam.", category: "Begrüßung" },
+    { id: "please_slowly", nepali: "अलि बिस्तारै बोल्नुस्।", roman: "ali bistarai bolnus.", german: "Bitte sprechen Sie etwas langsamer.", category: "Begrüßung" },
     { id: "my_name", nepali: "मेरो नाम मार्टिन हो।", roman: "mero naam Martin ho.", german: "Mein Name ist Martin.", category: "Vorstellen" },
-    { id: "i_learn_nepali", nepali: "म नेपाली सिक्दै छु।", roman: "ma nepali sikdai chhu.", german: "Ich lerne Nepali.", category: "Vorstellen" },
-    { id: "little_nepali", nepali: "मलाई नेपाली अलि अलि आउँछ।", roman: "malai nepali ali ali aauchha.", german: "Ich kann ein bisschen Nepali.", category: "Vorstellen" },
+    { id: "i_learn_nepali", nepali: "म नेपाली सिक्दैछु।", roman: "ma nepali sikdaichhu.", german: "Ich lerne Nepali.", category: "Vorstellen" },
+    { id: "little_nepali", nepali: "मलाई अलिअलि नेपाली आउँछ।", roman: "malai ali ali nepali aauchha.", german: "Ich kann ein bisschen Nepali.", category: "Vorstellen" },
     { id: "this_is_water", nepali: "यो पानी हो।", roman: "yo pani ho.", german: "Das ist Wasser.", category: "Essen" },
-    { id: "want_water", nepali: "मलाई पानी चाहिन्छ।", roman: "malai pani chahinchha.", german: "Ich brauche Wasser.", category: "Essen" },
-    { id: "give_tea", nepali: "कृपया चिया दिनुहोस्।", roman: "kripaya chiya dinuhos.", german: "Bitte geben Sie Tee.", category: "Essen" },
-    { id: "food_good", nepali: "खाना राम्रो छ।", roman: "khana ramro chha.", german: "Das Essen ist gut.", category: "Essen" },
+    { id: "want_water", nepali: "मलाई पानी चाहियो।", roman: "malai pani chahiyo.", german: "Ich hätte gern Wasser.", category: "Essen" },
+    { id: "give_tea", nepali: "मलाई चिया चाहियो।", roman: "malai chiya chahiyo.", german: "Ich hätte gern Tee.", category: "Essen" },
+    { id: "food_good", nepali: "खाना मिठो छ।", roman: "khana mitho chha.", german: "Das Essen ist lecker.", category: "Essen" },
     { id: "i_eat_rice", nepali: "म भात खान्छु।", roman: "ma bhat khanchhu.", german: "Ich esse Reis.", category: "Essen" },
-    { id: "where_toilet", nepali: "शौचालय कहाँ छ?", roman: "sauchalaya kaha chha?", german: "Wo ist die Toilette?", category: "Reise" },
+    { id: "where_toilet", nepali: "ट्वाइलेट कहाँ छ?", roman: "twailet kaha chha?", german: "Wo ist die Toilette?", category: "Reise" },
     { id: "where_market", nepali: "बजार कहाँ छ?", roman: "bajar kaha chha?", german: "Wo ist der Markt?", category: "Reise" },
-    { id: "need_taxi", nepali: "मलाई ट्याक्सी चाहिन्छ।", roman: "malai tyaksi chahinchha.", german: "Ich brauche ein Taxi.", category: "Reise" },
+    { id: "need_taxi", nepali: "मलाई ट्याक्सी चाहियो।", roman: "malai tyaksi chahiyo.", german: "Ich brauche ein Taxi.", category: "Reise" },
     { id: "this_hotel", nepali: "यो होटल राम्रो छ।", roman: "yo hotel ramro chha.", german: "Dieses Hotel ist gut.", category: "Reise" },
     { id: "room_big", nepali: "कोठा ठूलो छ।", roman: "kotha thulo chha.", german: "Das Zimmer ist groß.", category: "Orte" },
     { id: "house_small", nepali: "घर सानो छ।", roman: "ghar sano chha.", german: "Das Haus ist klein.", category: "Orte" },
-    { id: "today_good", nepali: "आज राम्रो दिन हो।", roman: "aaja ramro din ho.", german: "Heute ist ein guter Tag.", category: "Zeit" },
+    { id: "today_good", nepali: "आज मौसम राम्रो छ।", roman: "aaja mausam ramro chha.", german: "Heute ist das Wetter gut.", category: "Zeit" },
     { id: "tomorrow_go", nepali: "म भोलि जान्छु।", roman: "ma bholi janchhu.", german: "Ich gehe morgen.", category: "Zeit" },
     { id: "now_here", nepali: "म अहिले यहाँ छु।", roman: "ma ahile yaha chhu.", german: "Ich bin jetzt hier.", category: "Zeit" },
-    { id: "how_much", nepali: "यो कति हो?", roman: "yo kati ho?", german: "Wie viel kostet das?", category: "Einkaufen" },
+    { id: "how_much", nepali: "यो कति पर्छ?", roman: "yo kati parchha?", german: "Wie viel kostet das?", category: "Einkaufen" },
     { id: "too_expensive", nepali: "यो महँगो छ।", roman: "yo mahango chha.", german: "Das ist teuer.", category: "Einkaufen" },
     { id: "cheap_good", nepali: "यो सस्तो र राम्रो छ।", roman: "yo sasto ra ramro chha.", german: "Das ist günstig und gut.", category: "Einkaufen" },
-    { id: "one_tea", nepali: "एक चिया दिनुहोस्।", roman: "ek chiya dinuhos.", german: "Bitte einen Tee.", category: "Zahlen" },
-    { id: "two_water", nepali: "दुई पानी दिनुहोस्।", roman: "dui pani dinuhos.", german: "Bitte zwei Wasser.", category: "Zahlen" },
+    { id: "one_tea", nepali: "एउटा चिया दिनुहोस्।", roman: "euta chiya dinuhos.", german: "Bitte einen Tee.", category: "Zahlen" },
+    { id: "two_water", nepali: "दुई बोतल पानी दिनुहोस्।", roman: "dui botal pani dinuhos.", german: "Bitte zwei Flaschen Wasser.", category: "Zahlen" },
     { id: "what_is_this", nepali: "यो के हो?", roman: "yo ke ho?", german: "Was ist das?", category: "Fragen" },
     { id: "where_are_you", nepali: "तपाईं कहाँ हुनुहुन्छ?", roman: "tapai kaha hunuhunchha?", german: "Wo sind Sie?", category: "Fragen" },
     { id: "friend_home", nepali: "मेरो साथी घरमा छ।", roman: "mero sathi gharma chha.", german: "Mein Freund ist zu Hause.", category: "Personen" }
@@ -112,4 +112,28 @@ window.NEPALI_CONTENT.words.forEach((item) => {
 
 window.NEPALI_CONTENT.sentences.forEach((item) => {
   item.audio = `audio/sentences/${item.id}.wav`;
+});
+
+["kripaya", "school", "sauchalaya", "das"].forEach((id) => {
+  const item = window.NEPALI_CONTENT.words.find((candidate) => candidate.id === id);
+  if (item) item.audio = null;
+});
+
+[
+  "how_are_you",
+  "i_am_good",
+  "please_slowly",
+  "little_nepali",
+  "want_water",
+  "give_tea",
+  "food_good",
+  "where_toilet",
+  "need_taxi",
+  "today_good",
+  "how_much",
+  "one_tea",
+  "two_water"
+].forEach((id) => {
+  const item = window.NEPALI_CONTENT.sentences.find((candidate) => candidate.id === id);
+  if (item) item.audio = null;
 });
